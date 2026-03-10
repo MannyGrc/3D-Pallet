@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>360 Pallet Solutions — Pallet Configurator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;margin:0;overflow:hidden;}
+    .brand{font-family:'Barlow Condensed',sans-serif;}
+    ::-webkit-scrollbar{width:4px;}
+    ::-webkit-scrollbar-track{background:#1a1a1a;}
+    ::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:2px;}
+    .acc-body{max-height:0;overflow:hidden;transition:max-height .22s ease;}
+    .acc-body.open{max-height:700px;}
+    .chevron{transition:transform .22s ease;}
+    .chevron.open{transform:rotate(0deg);}
+    .chevron.closed{transform:rotate(-90deg);}
+    .di{background:#252525;border:1px solid #383838;color:#e2e2e2;border-radius:3px;padding:3px 7px;font-size:12px;width:62px;text-align:right;}
+    .di:focus{outline:none;border-color:#4caf50;}
+    .ds{background:#252525;border:1px solid #383838;color:#e2e2e2;border-radius:3px;padding:3px 6px;font-size:12px;}
+    .ds:focus{outline:none;border-color:#4caf50;}
+    .tab-btn{border-bottom:2px solid transparent;transition:border-color .15s,color .15s;padding:10px 18px;font-size:13px;color:#777;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;}
+    .tab-btn:hover{color:#333;}
+    .tab-btn.active{border-bottom-color:#4caf50;color:#1a1a1a;font-weight:500;}
+    .panel{position:absolute;inset:0;display:none;}
+    .panel.active{display:block;}
+    #cv3d{display:block;}
+    .row2{display:flex;align-items:center;justify-content:space-between;}
+    .row2 label{font-size:11px;color:#999;}
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+    .badge-ht{background:#e8f5e9;color:#2e7d32;}
+    .badge-mb{background:#fff8e1;color:#856404;}
+    /* Warnings */
+    #warn-bar{background:#fff8e1;border-bottom:1px solid #ffe082;padding:5px 16px;font-size:11px;color:#856404;display:none;}
+    #warn-bar.on{display:block;}
+    /* Tooltip */
+    .tip{position:relative;display:inline-flex;align-items:center;cursor:help;}
+    .tip .tip-icon{width:13px;height:13px;border-radius:50%;background:#333;color:#888;font-size:9px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;flex-shrink:0;}
+    .tip .tip-box{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#111;color:#ddd;font-size:11px;padding:6px 9px;border-radius:4px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200;min-width:150px;max-width:230px;white-space:normal;line-height:1.45;border:1px solid #333;}
+    .tip:hover .tip-box{opacity:1;}
+    /* 3D kbd legend */
+    #kbd-legend{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.45);color:#ccc;font-size:10px;padding:7px 10px;border-radius:5px;line-height:1.7;pointer-events:none;}
+    /* Saved cards grid */
+    #saved-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+    /* Stat card in sidebar */
+    .stat-card{background:#1a1a1a;border:1px solid #2d2d2d;border-radius:4px;padding:10px 12px;font-size:12px;display:flex;flex-direction:column;gap:5px;}
+    .stat-row{display:flex;justify-content:space-between;align-items:center;}
+    .stat-label{color:#777;font-size:11px;}
+    .stat-val{color:#e0e0e0;font-weight:600;}
+    .stat-val.green{color:#4caf50;}
+    /* Sidebar resize handle */
+    #sidebar-handle{position:absolute;top:0;right:0;width:5px;height:100%;cursor:col-resize;z-index:10;background:transparent;transition:background .15s;}
+    #sidebar-handle:hover,#sidebar-handle.dragging{background:rgba(76,175,80,0.35);}
+    #sidebar{position:relative;}
+    /* Custom number spinner */
+    .num-wrap{display:inline-flex;align-items:center;gap:2px;}
+    .num-wrap .di{-moz-appearance:textfield;width:52px;}
+    .num-wrap .di::-webkit-inner-spin-button,
+    .num-wrap .di::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+    .spin-btns{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+    .spin-btn{width:18px;height:11px;background:#2e7d32;border:none;color:#c8f5ca;font-size:7px;cursor:pointer;border-radius:2px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .12s,color .12s;}
+    .spin-btn:hover{background:#4caf50;color:#fff;}
+    .spin-btn:active{background:#388e3c;color:#fff;}
+  </style>
+</head>
+<body class="bg-gray-100">
+
+<!-- ── HEADER ──────────────────────────────── -->
+<header style="height:44px;background:#1a1a1a;" class="flex items-center px-4 gap-5 z-20 relative">
+  <div class="flex items-center gap-2 mr-3">
+    <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
+      <rect y="0"  width="26" height="3.5" rx="1" fill="#4caf50"/>
+      <rect y="5"  width="26" height="3.5" rx="1" fill="#4caf50"/>
+      <rect y="10" width="26" height="3.5" rx="1" fill="#4caf50"/>
+      <rect y="15" width="26" height="3.5" rx="1" fill="#4caf50"/>
+    </svg>
+    <div class="brand leading-none">
+      <div style="font-size:15px;font-weight:800;color:#4caf50;letter-spacing:.03em;">360°</div>
+      <div style="font-size:9px;color:#aaa;letter-spacing:.12em;text-transform:uppercase;">Pallet Solutions</div>
+    </div>
+  </div>
+  <nav class="flex h-full items-end">
+    <div style="border-bottom:2px solid #4caf50;padding:0 4px 8px;font-size:13px;color:#fff;font-weight:500;cursor:pointer;">Pallet</div>
+  </nav>
+  <div class="ml-auto flex items-center gap-2">
+    <button id="share-btn" onclick="encodeConfigToURL()" style="font-size:11px;color:#aaa;border:1px solid #383838;border-radius:4px;padding:4px 10px;background:transparent;cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">Copy Link</button>
+    <button style="font-size:12px;color:#aaa;border:1px solid #444;border-radius:4px;padding:4px 12px;background:transparent;cursor:pointer;" onmouseover="this.style.color='#fff';this.style.borderColor='#777'" onmouseout="this.style.color='#aaa';this.style.borderColor='#444'">&#9679; Login</button>
+  </div>
+</header>
+
+<!-- ── LAYOUT ──────────────────────────────── -->
+<div style="display:flex;height:calc(100vh - 44px);">
+
+<!-- ════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════ -->
+<aside id="sidebar" style="width:228px;background:#202020;color:#ddd;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;">
+  <div id="sidebar-handle" title="Drag to resize"></div>
+
+  <!-- Preset Standards -->
+  <div style="padding:10px 10px 8px;border-bottom:1px solid #2d2d2d;">
+    <div style="font-size:9px;color:#666;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;">Preset Standard</div>
+    <select id="i-preset" class="ds" style="width:100%;" onchange="applyPreset(this.value)">
+      <option value="custom">— Custom —</option>
+      <option value="gma">GMA Standard (48×40)</option>
+      <option value="eur">EUR / EPAL (800×1200mm)</option>
+      <option value="chep">CHEP Blue (48×40)</option>
+      <option value="iso1">ISO-1 (48×40)</option>
+      <option value="half">Half Pallet (48×20)</option>
+      <option value="military">Military (48×48)</option>
+    </select>
+  </div>
+
+  <!-- Pallet Type -->
+  <div style="padding:10px;border-bottom:1px solid #2d2d2d;">
+    <div style="display:flex;gap:6px;">
+      <button id="btn-stringer" onclick="setPalletType('stringer')" style="flex:1;padding:6px 0;font-size:12px;font-weight:600;border-radius:4px;border:none;cursor:pointer;background:#4caf50;color:#fff;">Stringer</button>
+      <button id="btn-block"    onclick="setPalletType('block')"    style="flex:1;padding:6px 0;font-size:12px;border-radius:4px;border:none;cursor:pointer;background:#2d2d2d;color:#bbb;">Block</button>
+    </div>
+  </div>
+
+  <!-- Measurement -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('meas')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Measurement<svg class="chevron open" id="ch-meas" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-meas" class="acc-body open">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
+        <div class="row2"><label>Length (in)</label><input type="number" id="i-len" value="43" min="12" max="120" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Width (in)</label><input type="number" id="i-wid" value="40" min="12" max="120" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Quantity</label><input type="number" id="i-qty" value="1" min="1" max="9999" class="di" oninput="refresh()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Deck Boards -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('top')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Top Deck Boards<svg class="chevron open" id="ch-top" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-top" class="acc-body open">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
+        <div class="row2"><label>Count</label><input type="number" id="i-tn" value="5" min="2" max="20" class="di" oninput="refresh()"></div>
+        <div class="row2">
+          <span class="tip" style="font-size:11px;color:#999;">Board Width (in)<span class="tip-icon">?</span><span class="tip-box">Face width of each deck board. Standard 2×4=3.5", 2×6=5.5"</span></span>
+          <input type="number" id="i-tbw" value="5.5" min="1.5" max="12" step="0.25" class="di" oninput="refresh()">
+        </div>
+        <div class="row2"><label>Thickness (in)</label><input type="number" id="i-tth" value="0.75" min="0.375" max="2" step="0.125" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Lead Board Width</label><input type="number" id="i-lbw" value="0" min="0" max="12" step="0.25" class="di" title="0 = same as board width" oninput="refresh()"></div>
+        <div class="row2">
+          <span class="tip" style="font-size:11px;color:#999;">Overhang (in)<span class="tip-icon">?</span><span class="tip-box">How far deck boards extend past the outer stringers on each side</span></span>
+          <input type="number" id="i-overhang" value="0" min="0" max="6" step="0.25" class="di" oninput="refresh()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Deck Boards -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('bot')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Bottom Deck Boards<svg class="chevron open" id="ch-bot" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-bot" class="acc-body open">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
+        <div class="row2"><label>Count</label><input type="number" id="i-bn" value="5" min="2" max="20" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Board Width (in)</label><input type="number" id="i-bbw" value="3.5" min="1.5" max="12" step="0.25" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Thickness (in)</label><input type="number" id="i-bth" value="0.75" min="0.375" max="2" step="0.125" class="di" oninput="refresh()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stringers / Blocks -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('str')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      <span id="lbl-str">Stringers</span><svg class="chevron open" id="ch-str" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-str" class="acc-body open">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
+        <div class="row2"><label>Count</label><input type="number" id="i-sn" value="3" min="2" max="7" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Height (in)</label><input type="number" id="i-sh" value="3.5" min="1.5" max="10" step="0.25" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Thickness (in)</label><input type="number" id="i-st" value="1.5" min="1" max="4" step="0.25" class="di" oninput="refresh()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notch Settings -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('notch')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Notch Settings<svg class="chevron closed" id="ch-notch" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-notch" class="acc-body">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
+        <div class="row2">
+          <span class="tip" style="font-size:11px;color:#999;">Notch Width (in)<span class="tip-icon">?</span><span class="tip-box">Width of the forklift entry notch cut into the stringer. Typically 9"</span></span>
+          <input type="number" id="i-nw" value="9" min="4" max="18" class="di" oninput="refresh()">
+        </div>
+        <div class="row2"><label>Notch Height (in)</label><input type="number" id="i-nh" value="1.5" min="0.75" max="4" step="0.25" class="di" oninput="refresh()"></div>
+        <div class="row2">
+          <span class="tip" style="font-size:11px;color:#999;">Entry Type<span class="tip-icon">?</span><span class="tip-box">2-way: forks enter from 2 sides. 4-way: notches allow entry from all 4 sides</span></span>
+          <select id="i-entry" class="ds" onchange="refresh()">
+            <option value="2way">2-Way</option>
+            <option value="4way">4-Way</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fasteners -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('nail')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Fasteners<svg class="chevron closed" id="ch-nail" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-nail" class="acc-body">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
+        <div class="row2"><label>Nail Size</label>
+          <select id="i-nailsize" class="ds" onchange="refresh()">
+            <option value="10d">10d (3")</option>
+            <option value="16d">16d (3.5")</option>
+            <option value="20d">20d (4")</option>
+            <option value="screw">Screw</option>
+          </select>
+        </div>
+        <div class="row2"><label>Nails Per Joint</label><input type="number" id="i-nailpj" value="2" min="1" max="6" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Pattern</label>
+          <select id="i-nailpat" class="ds" onchange="refresh()">
+            <option>Single Row</option>
+            <option>Staggered</option>
+            <option>Double Row</option>
+          </select>
+        </div>
+        <div class="row2"><label>Material</label>
+          <select id="i-nailmat" class="ds" onchange="refresh()">
+            <option>Bright</option>
+            <option>Galvanized</option>
+            <option>Stainless</option>
+          </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#bbb;">
+          <input type="checkbox" id="i-shownails" checked style="accent-color:#4caf50;" onchange="refresh()"> Show Nails in 3D
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wood & Treatment -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('wood')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Wood &amp; Treatment<svg class="chevron closed" id="ch-wood" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-wood" class="acc-body">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:7px;">
+        <div class="row2"><label>Species</label>
+          <select id="i-species" class="ds" onchange="refresh()">
+            <option>Mixed HW</option>
+            <option>S. Yellow Pine</option>
+            <option>Oak</option>
+            <option>Spruce/Pine/Fir</option>
+            <option>Poplar</option>
+          </select>
+        </div>
+        <div class="row2"><label>Grade</label>
+          <select id="i-grade" class="ds">
+            <option>#1</option><option selected>#2</option><option>Select</option>
+          </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#bbb;">
+          <input type="checkbox" id="i-ht" style="accent-color:#4caf50;" onchange="refresh()">
+          <span class="tip">Heat Treatment (ISPM-15)<span class="tip-icon">?</span><span class="tip-box">Required for international shipping. Kills pests via heat without chemicals</span></span>
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#bbb;">
+          <input type="checkbox" id="i-mb" style="accent-color:#4caf50;" onchange="refresh()"> Methyl Bromide
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weight & Load Calculator -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('wt')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Weight &amp; Load<svg class="chevron closed" id="ch-wt" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-wt" class="acc-body">
+      <div style="padding:4px 12px 12px;">
+        <div class="stat-card">
+          <div class="stat-row"><span class="stat-label">Est. Pallet Weight</span><span class="stat-val" id="wt-weight">— lbs</span></div>
+          <div class="stat-row"><span class="stat-label">Load Capacity</span><span class="stat-val green" id="wt-load">— lbs</span></div>
+          <div class="stat-row"><span class="stat-label">Total Board Feet</span><span class="stat-val" id="wt-bf">—</span></div>
+          <div class="stat-row"><span class="stat-label">Nail Count</span><span class="stat-val" id="wt-nails">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finishing -->
+  <div style="border-bottom:1px solid #2d2d2d;">
+    <button onclick="toggleAcc('fin')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
+      Finishing<svg class="chevron closed" id="ch-fin" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </button>
+    <div id="acc-fin" class="acc-body">
+      <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:7px;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#bbb;">
+          <input type="checkbox" id="i-paint" style="accent-color:#4caf50;" onchange="togglePaint()"> Paint Pallet
+        </label>
+        <div id="paint-row" style="display:none;align-items:center;justify-content:space-between;" class="row2">
+          <label>Color</label>
+          <input type="color" id="i-pcolor" value="#c0392b" style="width:40px;height:26px;border:1px solid #444;border-radius:3px;background:none;cursor:pointer;" onchange="refresh()">
+        </div>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#bbb;">
+          <input type="checkbox" id="i-stencil" style="accent-color:#4caf50;" onchange="toggleStencil()"> Stencil Text
+        </label>
+        <div id="stencil-row" style="display:none;">
+          <input type="text" id="i-stext" placeholder="e.g. FRAGILE" style="width:100%;background:#252525;border:1px solid #383838;color:#ddd;border-radius:3px;padding:4px 8px;font-size:12px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'">
+        </div>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#bbb;">
+          <input type="checkbox" id="i-chamfer" style="accent-color:#4caf50;"> Chamfer Lead Boards
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#bbb;">
+          <input type="checkbox" id="i-recycled" style="accent-color:#4caf50;"> Recycled / Reclaimed
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom buttons -->
+  <div style="margin-top:auto;padding:10px;display:flex;flex-direction:column;gap:6px;">
+    <div style="display:flex;gap:6px;">
+      <button onclick="saveConfig()" style="flex:1;background:#2d2d2d;color:#bbb;border:1px solid #3a3a3a;border-radius:4px;padding:8px 0;font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#383838'" onmouseout="this.style.background='#2d2d2d'">Save</button>
+      <button onclick="window.print()" style="flex:1;background:#4caf50;color:#fff;border:none;border-radius:4px;padding:8px 0;font-size:12px;font-weight:700;letter-spacing:.08em;cursor:pointer;" onmouseover="this.style.background='#43a047'" onmouseout="this.style.background='#4caf50'">PRINT</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════════════
+     MAIN
+════════════════════════════════════════════ -->
+<div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+
+  <!-- Summary bar -->
+  <div style="background:#fff;border-bottom:1px solid #e5e5e5;padding:5px 16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+    <div style="font-size:12px;color:#888;">Type: <strong id="s-type" style="color:#222;">Stringer</strong></div>
+    <div style="font-size:12px;color:#888;">Size: <strong id="s-size" style="color:#222;">43 × 40</strong></div>
+    <div style="font-size:12px;color:#888;">Qty: <strong id="s-qty" style="color:#222;">1</strong></div>
+    <div style="font-size:12px;color:#888;">Top: <strong id="s-top" style="color:#222;">5</strong></div>
+    <div style="font-size:12px;color:#888;">Bottom: <strong id="s-bot" style="color:#222;">5</strong></div>
+    <div style="font-size:12px;color:#888;"><span id="s-strlbl">Stgrs:</span> <strong id="s-str" style="color:#222;">3</strong></div>
+    <div style="font-size:12px;color:#888;">H: <strong id="s-ht" style="color:#222;">5.0"</strong></div>
+    <div style="font-size:12px;color:#888;">Wt: <strong id="s-wt" style="color:#222;">— lbs</strong></div>
+    <div style="font-size:12px;color:#888;">Load: <strong id="s-load" style="color:#2e7d32;">—</strong></div>
+    <div id="s-badges" style="display:flex;gap:4px;"></div>
+  </div>
+
+  <!-- Validation warnings -->
+  <div id="warn-bar"></div>
+
+  <!-- Tab bar -->
+  <div style="background:#fff;border-bottom:1px solid #e5e5e5;display:flex;">
+    <button class="tab-btn" id="tb-sch"   onclick="showTab('sch')">Schematic</button>
+    <button class="tab-btn" id="tb-cut"   onclick="showTab('cut')">Cut List</button>
+    <button class="tab-btn active" id="tb-3d" onclick="showTab('3d')">3D View</button>
+    <button class="tab-btn" id="tb-co"    onclick="showTab('co')">Checkout</button>
+    <button class="tab-btn" id="tb-saved" onclick="showTab('saved')">Saved</button>
+  </div>
+
+  <!-- Panels -->
+  <div style="flex:1;position:relative;overflow:hidden;">
+
+    <!-- 3D View -->
+    <div id="p-3d" class="panel active" style="background:linear-gradient(135deg,#eef0ee,#e8ede8);">
+      <div style="position:absolute;top:10px;right:10px;z-index:10;display:flex;gap:5px;align-items:center;">
+        <button onclick="resetCam()" style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:4px 9px;font-size:11px;color:#555;cursor:pointer;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">Reset</button>
+        <button onclick="toggleWire()" id="wire-btn" style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:4px 9px;font-size:11px;color:#555;cursor:pointer;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=wireMode?'#e8f5e9':'#fff'">Wireframe</button>
+        <button onclick="toggleAutoRotate()" id="rotate-btn" style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:4px 9px;font-size:11px;color:#555;cursor:pointer;">Auto-Rotate</button>
+        <button onclick="toggleExploded()" id="explode-btn" style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:4px 9px;font-size:11px;color:#555;cursor:pointer;">Explode</button>
+        <select id="bg-select" onchange="setSceneBg(this.value)" style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:11px;color:#555;cursor:pointer;">
+          <option value="#eef0ee">Light</option>
+          <option value="#f5f0e8">Warm</option>
+          <option value="#1a2020">Dark</option>
+          <option value="#ffffff">White</option>
+        </select>
+      </div>
+      <div id="kbd-legend">1 Schematic · 2 Cut List · 3 3D View · 4 Checkout · 5 Saved<br>R Reset Cam · W Wireframe · E Explode</div>
+      <canvas id="cv3d"></canvas>
+    </div>
+
+    <!-- Schematic -->
+    <div id="p-sch" class="panel" style="background:#fff;overflow:auto;padding:24px;">
+      <h2 style="font-size:13px;font-weight:600;color:#444;margin:0 0 16px;">Schematic</h2>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Top View</p><canvas id="cv-top" width="480" height="380" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+        <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Side View</p><canvas id="cv-side" width="380" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+        <div><p style="font-size:11px;color:#888;margin:0 0 5px;">End View</p><canvas id="cv-end" width="240" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Cut List -->
+    <div id="p-cut" class="panel" style="background:#fff;overflow:auto;padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <h2 style="font-size:13px;font-weight:600;color:#444;margin:0;">Cut List</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label style="font-size:11px;color:#888;">Cost / Bd Ft $<input type="number" id="i-cost" value="1.20" min="0" step="0.05" style="width:52px;border:1px solid #ddd;border-radius:3px;padding:2px 5px;font-size:11px;margin-left:5px;" oninput="buildCutList(cfg())"></label>
+          <button onclick="exportCSV(cfg())" style="background:#f0f7f0;border:1px solid #c8e0c8;border-radius:4px;padding:4px 12px;font-size:11px;color:#2e7d32;cursor:pointer;" onmouseover="this.style.background='#e8f5e9'" onmouseout="this.style.background='#f0f7f0'">Export CSV</button>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:#f7f7f7;">
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:left;font-weight:600;color:#555;">Piece</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Qty</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Length</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Width</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Thick</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Bd Ft/ea</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Total Bd Ft</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Weight (lbs)</th>
+            <th style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:600;color:#555;">Est. Cost</th>
+          </tr>
+        </thead>
+        <tbody id="cut-body"></tbody>
+        <tfoot id="cut-foot"></tfoot>
+      </table>
+    </div>
+
+    <!-- Checkout -->
+    <div id="p-co" class="panel" style="background:#fff;overflow:auto;padding:24px;">
+      <div style="max-width:560px;">
+        <h2 style="font-size:13px;font-weight:600;color:#444;margin:0 0 14px;">Request a Quote</h2>
+        <div id="co-summary" style="background:#f9fafb;border:1px solid #e5e5e5;border-radius:6px;padding:14px;margin-bottom:18px;font-size:12px;color:#555;line-height:1.8;"></div>
+        <form onsubmit="submitOrder(event)" style="display:flex;flex-direction:column;gap:11px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">First Name</label><input type="text" placeholder="John" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+            <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Last Name</label><input type="text" placeholder="Doe" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+          </div>
+          <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Company</label><input type="text" placeholder="Acme Corp" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Email</label><input type="email" placeholder="john@company.com" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+            <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Phone</label><input type="tel" placeholder="(555) 000-0000" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+          </div>
+          <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Delivery Address</label><input type="text" placeholder="123 Main St, City, State 00000" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Requested Delivery</label><input type="date" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+            <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Pallet Quantity</label><input type="number" id="co-qty" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+          </div>
+          <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Special Instructions</label><textarea rows="3" placeholder="Any special requirements, certifications needed, etc." style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;resize:none;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></textarea></div>
+          <button type="submit" style="background:#4caf50;color:#fff;border:none;border-radius:4px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#43a047'" onmouseout="this.style.background='#4caf50'">Submit Quote Request</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Saved Configs -->
+    <div id="p-saved" class="panel" style="background:#f9f9f9;overflow:auto;padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:13px;font-weight:600;color:#444;margin:0;">Saved Configurations</h2>
+        <button onclick="saveConfig()" style="background:#4caf50;color:#fff;border:none;border-radius:4px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#43a047'" onmouseout="this.style.background='#4caf50'">+ Save Current</button>
+      </div>
+      <div id="saved-cards"></div>
+      <p id="no-saves-msg" style="font-size:13px;color:#aaa;text-align:center;margin-top:40px;">No saved configurations yet. Configure a pallet and click Save.</p>
+    </div>
+
+  </div><!-- /panels -->
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const PRESETS = {
+  gma:      { L:48,   W:40,   tn:7, tbw:3.5, tth:0.75,  bn:5, bbw:3.5, bth:0.625, sn:3, sh:3.5, st:1.5 },
+  eur:      { L:47.2, W:31.5, tn:7, tbw:3.5, tth:0.75,  bn:4, bbw:5.5, bth:0.75,  sn:3, sh:3.5, st:1.5 },
+  chep:     { L:48,   W:40,   tn:7, tbw:3.5, tth:0.75,  bn:5, bbw:3.5, bth:0.625, sn:3, sh:3.5, st:1.5 },
+  iso1:     { L:48,   W:40,   tn:5, tbw:5.5, tth:0.75,  bn:5, bbw:3.5, bth:0.75,  sn:3, sh:3.5, st:1.5 },
+  half:     { L:48,   W:20,   tn:5, tbw:3.5, tth:0.75,  bn:3, bbw:3.5, bth:0.75,  sn:3, sh:3.5, st:1.5 },
+  military: { L:48,   W:48,   tn:9, tbw:3.5, tth:1.0,   bn:5, bbw:3.5, bth:0.75,  sn:3, sh:5.5, st:1.5 },
+};
+
+const DENSITY  = { 'Mixed HW':2.9, 'S. Yellow Pine':3.4, 'Oak':3.6, 'Spruce/Pine/Fir':2.4, 'Poplar':2.5 };
+const STRENGTH = { 'Mixed HW':1200,'S. Yellow Pine':1500,'Oak':1600,'Spruce/Pine/Fir':900, 'Poplar':950  };
+
+const SPECIES_WOOD = {
+  'Mixed HW':        [0xcc9f58,0xbf9246,0xd4a860,0xc8a050,0xba8c40],
+  'S. Yellow Pine':  [0xc87840,0xba6e32,0xd08448,0xc07a38,0xb86828],
+  'Oak':             [0x8a6528,0x7a5820,0x966c2e,0x886024,0x7c5a1c],
+  'Spruce/Pine/Fir': [0xe0c882,0xd8be72,0xe8d08a,0xdcc47a,0xd4ba68],
+  'Poplar':          [0xb0aa60,0xa8a250,0xb8b268,0xaca458,0xa09e48],
+};
+const SPECIES_STR = {
+  'Mixed HW':0x8a6520,'S. Yellow Pine':0x8a5010,'Oak':0x6a4510,'Spruce/Pine/Fir':0xa09050,'Poplar':0x888040,
+};
+
+const STORAGE_KEY = '360pallet_saves';
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let palType = 'stringer';
+let wireMode = false;
+let autoRotateMode = false;
+let explodedMode = false;
+let explodeAnim = { top:0, bot:0 };
+let explodeTarget = { top:0, bot:0 };
+let scene, camera, renderer, controls, palGroup, topGroup, botGroup, strGroup;
+
+// ═══════════════════════════════════════════════════════════
+// DOM HELPERS
+// ═══════════════════════════════════════════════════════════
+function v(id)  { return document.getElementById(id)?.value ?? ''; }
+function el(id) { return document.getElementById(id); }
+function setV(id, val) { const e = el(id); if (e) e.value = val; }
+
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+function cfg() {
+  return {
+    type:     palType,
+    L:        +v('i-len')      || 43,
+    W:        +v('i-wid')      || 40,
+    qty:      +v('i-qty')      || 1,
+    tn:       +v('i-tn')       || 5,
+    tbw:      +v('i-tbw')      || 5.5,
+    tth:      +v('i-tth')      || 0.75,
+    lbw:      +v('i-lbw')      || 0,
+    overhang: +v('i-overhang') || 0,
+    bn:       +v('i-bn')       || 5,
+    bbw:      +v('i-bbw')      || 3.5,
+    bth:      +v('i-bth')      || 0.75,
+    sn:       +v('i-sn')       || 3,
+    sh:       +v('i-sh')       || 3.5,
+    st:       +v('i-st')       || 1.5,
+    entry:    v('i-entry')     || '2way',
+    species:  v('i-species')   || 'Mixed HW',
+    ht:       el('i-ht')?.checked  || false,
+    mb:       el('i-mb')?.checked  || false,
+    paintOn:  el('i-paint')?.checked || false,
+    paintCol: v('i-pcolor')    || '#c0392b',
+    nailsPerJoint: +v('i-nailpj') || 2,
+    nailSize:  v('i-nailsize') || '10d',
+    nailPat:   v('i-nailpat')  || 'Single Row',
+    nailMat:   v('i-nailmat')  || 'Bright',
+    showNails: el('i-shownails')?.checked ?? true,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALCULATIONS
+// ═══════════════════════════════════════════════════════════
+function bf(l, w, t) { return (l * w * t) / 144; }
+
+function calcWeight(c) {
+  const d = DENSITY[c.species] || 2.9;
+  let vol = bf(c.W + 2*c.overhang, c.tbw, c.tth) * c.tn
+          + bf(c.W + 2*c.overhang, c.bbw, c.bth) * c.bn
+          + bf(c.L, c.sh, c.st) * c.sn;
+  return (vol * d).toFixed(1);
+}
+
+function calcLoad(c) {
+  const Fb = STRENGTH[c.species] || 1200;
+  return Math.min(Math.round(Fb * c.st * c.sh * c.sn * 0.04 / 100) * 100, 8000);
+}
+
+function calcNails(c) {
+  // joints = each deck board × each stringer it crosses (top + bottom)
+  const joints = (c.tn + c.bn) * c.sn;
+  return joints * c.nailsPerJoint;
+}
+
+function calcTotalBF(c) {
+  let vol = bf(c.W + 2*c.overhang, c.tbw, c.tth) * c.tn
+          + bf(c.W + 2*c.overhang, c.bbw, c.bth) * c.bn
+          + bf(c.L, c.sh, c.st) * c.sn;
+  return (vol * c.qty).toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════════════════
+function validateConfig(c) {
+  const msgs = [];
+  const topTotal = c.tn * c.tbw;
+  if (topTotal > c.L * 1.05) msgs.push(`Top deck boards (${topTotal.toFixed(1)}") exceed pallet length (${c.L}") — boards will overlap`);
+  const botTotal = c.bn * c.bbw;
+  if (botTotal > c.L * 1.05) msgs.push(`Bottom deck boards (${botTotal.toFixed(1)}") exceed pallet length — will overlap`);
+  if (c.sn > 1 && (c.W / (c.sn - 1)) < (c.st + 1)) msgs.push('Stringers may be too close together for selected pallet width');
+  return msgs;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PRESETS
+// ═══════════════════════════════════════════════════════════
+function applyPreset(key) {
+  const p = PRESETS[key];
+  if (!p) return;
+  setV('i-len', p.L); setV('i-wid', p.W);
+  setV('i-tn', p.tn); setV('i-tbw', p.tbw); setV('i-tth', p.tth);
+  setV('i-bn', p.bn); setV('i-bbw', p.bbw); setV('i-bth', p.bth);
+  setV('i-sn', p.sn); setV('i-sh', p.sh);   setV('i-st', p.st);
+  refresh();
+}
+
+// ═══════════════════════════════════════════════════════════
+// PALLET TYPE
+// ═══════════════════════════════════════════════════════════
+function setPalletType(t) {
+  palType = t;
+  el('btn-stringer').style.cssText = t==='stringer'
+    ? 'flex:1;padding:6px 0;font-size:12px;font-weight:600;border-radius:4px;border:none;cursor:pointer;background:#4caf50;color:#fff;'
+    : 'flex:1;padding:6px 0;font-size:12px;border-radius:4px;border:none;cursor:pointer;background:#2d2d2d;color:#bbb;';
+  el('btn-block').style.cssText = t==='block'
+    ? 'flex:1;padding:6px 0;font-size:12px;font-weight:600;border-radius:4px;border:none;cursor:pointer;background:#4caf50;color:#fff;'
+    : 'flex:1;padding:6px 0;font-size:12px;border-radius:4px;border:none;cursor:pointer;background:#2d2d2d;color:#bbb;';
+  el('lbl-str').textContent    = t === 'block' ? 'Blocks'  : 'Stringers';
+  el('s-strlbl').textContent   = t === 'block' ? 'Blocks:' : 'Stgrs:';
+  refresh();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ACCORDION
+// ═══════════════════════════════════════════════════════════
+function toggleAcc(name) {
+  const body = el('acc-' + name);
+  const ch   = el('ch-'  + name);
+  body.classList.toggle('open');
+  ch.classList.toggle('open');
+  ch.classList.toggle('closed');
+}
+
+// ═══════════════════════════════════════════════════════════
+// FINISHING TOGGLES
+// ═══════════════════════════════════════════════════════════
+function togglePaint()   { el('paint-row').style.display   = el('i-paint').checked   ? 'flex'  : 'none'; refresh(); }
+function toggleStencil() { el('stencil-row').style.display = el('i-stencil').checked ? 'block' : 'none'; }
+
+// ═══════════════════════════════════════════════════════════
+// MAIN REFRESH
+// ═══════════════════════════════════════════════════════════
+function refresh() {
+  const c = cfg();
+  const totalH = (c.bth + c.sh + c.tth).toFixed(2);
+  const wt = calcWeight(c);
+  const load = calcLoad(c);
+  const nails = calcNails(c);
+  const tbf = calcTotalBF(c);
+
+  // Summary bar
+  el('s-type').textContent = c.type === 'stringer' ? 'Stringer' : 'Block';
+  el('s-size').textContent = `${c.L} × ${c.W}`;
+  el('s-qty').textContent  = c.qty;
+  el('s-top').textContent  = c.tn;
+  el('s-bot').textContent  = c.bn;
+  el('s-str').textContent  = c.sn;
+  el('s-ht').textContent   = totalH + '"';
+  el('s-wt').textContent   = wt + ' lbs';
+  el('s-load').textContent = load.toLocaleString() + ' lbs';
+
+  // Compliance badges
+  const badges = [];
+  if (c.ht) badges.push('<span class="badge badge-ht">HT</span>');
+  if (c.mb) badges.push('<span class="badge badge-mb">MB</span>');
+  el('s-badges').innerHTML = badges.join('');
+
+  // Sidebar weight stats
+  if (el('wt-weight')) el('wt-weight').textContent = wt + ' lbs';
+  if (el('wt-load'))   el('wt-load').textContent   = load.toLocaleString() + ' lbs';
+  if (el('wt-bf'))     el('wt-bf').textContent      = tbf + ' bd ft';
+  if (el('wt-nails'))  el('wt-nails').textContent   = nails;
+
+  // Warnings
+  const warns = validateConfig(c);
+  const wbar = el('warn-bar');
+  if (warns.length) {
+    wbar.innerHTML = '⚠ ' + warns.join(' &nbsp;·&nbsp; ');
+    wbar.classList.add('on');
+  } else {
+    wbar.classList.remove('on');
+  }
+
+  // Rebuild 3D
+  buildPallet(c);
+
+  // Update active panels
+  if (el('p-sch').className.includes('active')) drawSchematic(c);
+  if (el('p-cut').className.includes('active')) buildCutList(c);
+  updateCoSummary(c);
+}
+
+// ═══════════════════════════════════════════════════════════
+// THREE.JS INIT
+// ═══════════════════════════════════════════════════════════
+function initThree() {
+  const cont   = el('p-3d');
+  const canvas = el('cv3d');
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xeef0ee);
+  scene.fog = new THREE.Fog(0xeef0ee, 200, 600);
+
+  // Grid
+  const grid = new THREE.GridHelper(300, 30, 0xc8d0c8, 0xdde5dd);
+  grid.position.y = -0.4;
+  scene.add(grid);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const sun = new THREE.DirectionalLight(0xfff8e8, 1.1);
+  sun.position.set(60, 100, 70);
+  sun.castShadow = true;
+  sun.shadow.mapSize.width = sun.shadow.mapSize.height = 2048;
+  scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc8b870, 0.35));
+  const fill = new THREE.DirectionalLight(0xe8f0ff, 0.3);
+  fill.position.set(-40, 30, -50);
+  scene.add(fill);
+
+  // Camera
+  const W = cont.clientWidth, H = cont.clientHeight;
+  camera = new THREE.PerspectiveCamera(42, W/H, 0.5, 1000);
+  camera.position.set(50, 42, 72);
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Controls
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping  = true;
+  controls.dampingFactor  = 0.07;
+  controls.minDistance    = 15;
+  controls.maxDistance    = 350;
+  controls.autoRotateSpeed = 1.5;
+  controls.target.set(0, 4, 0);
+  controls.update();
+
+  // Shadow floor
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(400,400),
+    new THREE.ShadowMaterial({ opacity: 0.12 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.position.y = -0.38;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  window.addEventListener('resize', onResize);
+  buildPallet(cfg());
+  animate();
+}
+
+function onResize() {
+  const c = el('p-3d');
+  if (!c || !renderer) return;
+  const W = c.clientWidth, H = c.clientHeight;
+  if (!W || !H) return;
+  camera.aspect = W/H;
+  camera.updateProjectionMatrix();
+  renderer.setSize(W, H);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  // Smooth explode
+  const LERP = 0.1;
+  if (topGroup) {
+    explodeAnim.top += (explodeTarget.top - explodeAnim.top) * LERP;
+    explodeAnim.bot += (explodeTarget.bot - explodeAnim.bot) * LERP;
+    topGroup.position.y = explodeAnim.top;
+    botGroup.position.y = explodeAnim.bot;
+  }
+  renderer.render(scene, camera);
+}
+
+function resetCam() {
+  camera.position.set(50, 42, 72);
+  controls.target.set(0, 4, 0);
+  controls.update();
+}
+
+function toggleWire() {
+  wireMode = !wireMode;
+  el('wire-btn').style.background = wireMode ? '#e8f5e9' : '#fff';
+  if (palGroup) palGroup.traverse(ch => { if (ch.isMesh) ch.material.wireframe = wireMode; });
+}
+
+function toggleAutoRotate() {
+  autoRotateMode = !autoRotateMode;
+  controls.autoRotate = autoRotateMode;
+  el('rotate-btn').style.background = autoRotateMode ? '#e8f5e9' : '#fff';
+}
+
+function toggleExploded() {
+  explodedMode = !explodedMode;
+  el('explode-btn').style.background = explodedMode ? '#e8f5e9' : '#fff';
+  explodeTarget.top = explodedMode ?  12 : 0;
+  explodeTarget.bot = explodedMode ? -8  : 0;
+}
+
+function setSceneBg(hex) {
+  if (!scene) return;
+  const col = new THREE.Color(parseInt(hex.replace('#',''), 16));
+  scene.background = col;
+  if (scene.fog) scene.fog.color = col;
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD PALLET MESH
+// X = pallet width (W), Z = pallet length (L), Y = height
+// ═══════════════════════════════════════════════════════════
+function mat(col) {
+  return new THREE.MeshStandardMaterial({ color: col, roughness: 0.88, metalness: 0, wireframe: wireMode });
+}
+function metalMat(col) {
+  return new THREE.MeshStandardMaterial({ color: col, roughness: 0.25, metalness: 0.75, wireframe: wireMode });
+}
+function box(lx, ly, lz, px, py, pz, col) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(lx, ly, lz), mat(col));
+  m.position.set(px, py, pz);
+  m.castShadow = m.receiveShadow = true;
+  return m;
+}
+
+function buildPallet(c) {
+  if (!scene) return;
+
+  // Reset explode state when rebuilding
+  explodeAnim = { top:0, bot:0 };
+  explodeTarget = { top:0, bot:0 };
+  explodedMode = false;
+  if (el('explode-btn')) el('explode-btn').style.background = '#fff';
+
+  if (palGroup) {
+    scene.remove(palGroup);
+    palGroup.traverse(ch => { if (ch.geometry) ch.geometry.dispose(); if (ch.material) ch.material.dispose(); });
+  }
+
+  palGroup  = new THREE.Group();
+  topGroup  = new THREE.Group();
+  botGroup  = new THREE.Group();
+  strGroup  = new THREE.Group();
+  palGroup.add(strGroup, topGroup, botGroup);
+
+  const { L, W, tn, tbw, tth, lbw, overhang, bn, bbw, bth, sh, st, sn, entry, species, paintOn, paintCol } = c;
+  const WOOD       = SPECIES_WOOD[species] || SPECIES_WOOD['Mixed HW'];
+  const STRINGER_C = SPECIES_STR[species]  || 0x8a6520;
+  const BLOCK_C    = 0x7a5c1a;
+
+  const totalW = W + 2 * overhang; // board span including overhang
+  const yBot   = bth / 2;
+  const yStr   = bth + sh / 2;
+  const yTop   = bth + sh + tth / 2;
+
+  const leadW = lbw > 0 ? lbw : tbw; // lead board face width
+
+  // Helper: compute board center positions along pallet length so end boards
+  // are flush with the pallet ends and interior boards have equal gaps between them.
+  function boardZ(i, count, endBoardW, innerBoardW, palletLen) {
+    if (count === 1) return 0;
+    if (i === 0)         return -palletLen / 2 + endBoardW / 2;
+    if (i === count - 1) return  palletLen / 2 - endBoardW / 2;
+    const intStart = -palletLen / 2 + endBoardW;
+    const intEnd   =  palletLen / 2 - endBoardW;
+    const ni  = count - 2;
+    const gap = (intEnd - intStart - ni * innerBoardW) / (ni + 1);
+    return intStart + gap + (i - 1) * (innerBoardW + gap) + innerBoardW / 2;
+  }
+
+  if (c.type === 'stringer') {
+    // Stringers — outer faces flush with pallet width edges
+    for (let i = 0; i < sn; i++) {
+      const x = sn === 1 ? 0 : -(W / 2 - st / 2) + i * ((W - st) / (sn - 1));
+      strGroup.add(box(st, sh, L,  x, yStr, 0, STRINGER_C));
+    }
+    // Top deck boards
+    for (let i = 0; i < tn; i++) {
+      const bw = (i === 0 || i === tn - 1) ? leadW : tbw;
+      const z  = boardZ(i, tn, leadW, tbw, L);
+      topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD[i % WOOD.length]));
+    }
+    // Bottom deck boards
+    for (let i = 0; i < bn; i++) {
+      const z = boardZ(i, bn, bbw, bbw, L);
+      botGroup.add(box(totalW, bth, bbw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
+    }
+  } else {
+    // Block pallet — blocks flush within W and L
+    const cols = Math.min(sn, 4);
+    const rows = Math.ceil(9 / cols);
+    const bsz  = st * 2;
+    for (let r = 0; r < rows; r++) {
+      for (let cc = 0; cc < cols; cc++) {
+        const x = cols === 1 ? 0 : -(W / 2 - bsz / 2) + cc * ((W - bsz) / (cols - 1));
+        const z = rows === 1 ? 0 : -(L / 2 - bsz / 2) + r  * ((L - bsz) / (rows - 1));
+        strGroup.add(box(bsz, sh, bsz,  x, yStr, z, BLOCK_C));
+      }
+    }
+    for (let i = 0; i < tn; i++) {
+      const bw = (i === 0 || i === tn - 1) ? leadW : tbw;
+      const z  = boardZ(i, tn, leadW, tbw, L);
+      topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD[i % WOOD.length]));
+    }
+    for (let i = 0; i < bn; i++) {
+      const z = boardZ(i, bn, bbw, bbw, L);
+      botGroup.add(box(totalW, bth, bbw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
+    }
+  }
+
+  // ── NAILS ──────────────────────────────────────────────
+  if (c.showNails) {
+    const NAIL_COL = { 'Bright': 0xd4d4d4, 'Galvanized': 0x9ca8b0, 'Stainless': 0xeaeaea };
+    const nailCol  = NAIL_COL[c.nailMat] || 0xd4d4d4;
+    const nailM    = metalMat(nailCol);
+
+    // Shank radius by nail size (close to actual dimensions, ~1.5× real for visibility)
+    const SHANK_R  = { '10d': 0.11, '16d': 0.12, '20d': 0.14, 'screw': 0.12 };
+    const shankR   = SHANK_R[c.nailSize] || 0.11;
+    const headR    = shankR * 2.0;
+    const headH    = 0.08;
+    const penetration = 1.5; // inches into stringer/block
+
+    // Shared geometries
+    const headGeo  = new THREE.CylinderGeometry(headR, headR, headH, 8);
+
+    // Returns {x, z} offsets for each nail within one joint
+    function jointOffsets(count, bw) {
+      const spread = Math.min(bw * 0.22, 1.5);
+      const offs = [];
+      if (count === 1) { offs.push({ x: 0, z: 0 }); return offs; }
+      if (c.nailPat === 'Double Row') {
+        const perRow = Math.ceil(count / 2);
+        for (let i = 0; i < count; i++) {
+          const row = i < perRow ? -1 : 1;
+          const col = i % perRow;
+          const zOff = perRow === 1 ? 0 : (col / (perRow - 1) - 0.5) * spread * 2;
+          offs.push({ x: row * st * 0.22, z: zOff });
+        }
+      } else if (c.nailPat === 'Staggered') {
+        for (let i = 0; i < count; i++) {
+          const zOff = (i / (count - 1) - 0.5) * spread * 2;
+          offs.push({ x: (i % 2 === 0 ? 1 : -1) * st * 0.15, z: zOff });
+        }
+      } else {
+        for (let i = 0; i < count; i++) {
+          const zOff = (i / (count - 1) - 0.5) * spread * 2;
+          offs.push({ x: 0, z: zOff });
+        }
+      }
+      return offs;
+    }
+
+    function addNail(group, px, pz, headY, shankCY, shankLen) {
+      const head = new THREE.Mesh(headGeo, nailM);
+      head.position.set(px, headY, pz);
+      head.castShadow = true;
+      group.add(head);
+      const shankGeo = new THREE.CylinderGeometry(shankR, shankR, shankLen, 6);
+      const shank = new THREE.Mesh(shankGeo, nailM);
+      shank.position.set(px, shankCY, pz);
+      shank.castShadow = true;
+      group.add(shank);
+    }
+
+    // Stringer X positions (same formula as board building above)
+    const strXArr = [];
+    for (let i = 0; i < sn; i++) {
+      strXArr.push(sn === 1 ? 0 : -(W / 2 - st / 2) + i * ((W - st) / (sn - 1)));
+    }
+
+    const topSurface = bth + sh + tth;   // Y of top deck board top face
+    const botSurface = 0;                 // Y of bottom deck board bottom face
+
+    // Top deck nails (head on top surface, shank drives down into stringer)
+    // Rule: lead boards >= 5.5" (1×6) require a minimum of 3 nails per joint
+    const topShankLen = tth + penetration;
+    for (let j = 0; j < tn; j++) {
+      const isLead = (j === 0 || j === tn - 1);
+      const bw     = isLead ? leadW : tbw;
+      const count  = (isLead && bw >= 5.5) ? Math.max(c.nailsPerJoint, 3) : c.nailsPerJoint;
+      const zB     = boardZ(j, tn, leadW, tbw, L);
+      const offs   = jointOffsets(count, bw);
+      for (const sx of strXArr) {
+        for (const off of offs) {
+          addNail(topGroup, sx + off.x, zB + off.z,
+            topSurface + headH / 2,
+            topSurface - topShankLen / 2,
+            topShankLen);
+        }
+      }
+    }
+
+    // Bottom deck nails (head on bottom face, shank drives up into stringer)
+    // Rule: lead boards >= 5.5" require a minimum of 3 nails per joint
+    const botShankLen = bth + penetration;
+    for (let j = 0; j < bn; j++) {
+      const isLead = (j === 0 || j === bn - 1);
+      const count  = (isLead && bbw >= 5.5) ? Math.max(c.nailsPerJoint, 3) : c.nailsPerJoint;
+      const zB     = boardZ(j, bn, bbw, bbw, L);
+      const offs   = jointOffsets(count, bbw);
+      for (const sx of strXArr) {
+        for (const off of offs) {
+          addNail(botGroup, sx + off.x, zB + off.z,
+            botSurface - headH / 2,
+            botSurface + botShankLen / 2,
+            botShankLen);
+        }
+      }
+    }
+  }
+
+  // Forklift entry indicators for 4-way
+  if (entry === '4way') {
+    const arrowMat = new THREE.MeshBasicMaterial({ color: 0x4caf50, transparent: true, opacity: 0.55 });
+    const aH  = sh * 0.55;
+    const aL  = 9;
+    const yA  = bth + sh / 2;
+    [-1, 1].forEach(s => {
+      const m1 = new THREE.Mesh(new THREE.BoxGeometry(1, aH, aL), arrowMat);
+      m1.position.set(s * (W/2 + aL/2), yA, 0);
+      palGroup.add(m1);
+      const m2 = new THREE.Mesh(new THREE.BoxGeometry(aL, aH, 1), arrowMat);
+      m2.position.set(0, yA, s * (L/2 + aL/2));
+      palGroup.add(m2);
+    });
+  }
+
+  // Paint override
+  if (paintOn && paintCol) {
+    const col = parseInt(paintCol.replace('#',''), 16);
+    palGroup.traverse(ch => { if (ch.isMesh && ch.material.type === 'MeshStandardMaterial') ch.material = mat(col); });
+  }
+
+  scene.add(palGroup);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCHEMATIC (2D Canvas)
+// ═══════════════════════════════════════════════════════════
+function drawSchematic(c) {
+  drawTopView(c);
+  drawSideView(c);
+  drawEndView(c);
+}
+
+function drawTopView(c) {
+  const cv  = el('cv-top');
+  const ctx = cv.getContext('2d');
+  const { L, W, tn, tbw, lbw, bn, bbw, sn, st, overhang } = c;
+  const totalW = W + 2 * overhang;
+  const leadW  = lbw > 0 ? lbw : tbw;
+  const mg = 36, sw = cv.width - mg*2, sh = cv.height - mg*2;
+  const scX = sw / totalW, scZ = sh / L, sc = Math.min(scX, scZ);
+  const pw = totalW * sc, ph = L * sc;
+  const ox = mg + (sw-pw)/2, oy = mg + (sh-ph)/2;
+
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.rect(ox, oy, pw, ph); ctx.fill(); ctx.stroke();
+
+  // Stringers — outer faces flush with pallet width edges
+  ctx.fillStyle = '#7a5c20';
+  for (let i = 0; i < sn; i++) {
+    const x  = sn === 1 ? W/2 : st/2 + i * ((W - st) / (sn - 1));
+    const px = ox + overhang*sc + (x - st/2)*sc;
+    ctx.fillRect(px, oy, st*sc, ph);
+  }
+  // Top deck boards — end boards flush with pallet ends, interior evenly gapped
+  ctx.strokeStyle = '#a07028'; ctx.lineWidth = 0.5;
+  for (let i = 0; i < tn; i++) {
+    const bw = (i === 0 || i === tn-1) ? leadW : tbw;
+    let z;
+    if (tn === 1) { z = L/2; }
+    else if (i === 0) { z = leadW/2; }
+    else if (i === tn-1) { z = L - leadW/2; }
+    else {
+      const ni = tn - 2, intStart = leadW, intEnd = L - leadW;
+      const gap = (intEnd - intStart - ni*tbw) / (ni + 1);
+      z = intStart + gap + (i-1)*(tbw + gap) + tbw/2;
+    }
+    ctx.fillStyle = i%2 ? '#cc9f58' : '#dcaf69';
+    const py = oy + (z - bw/2)*sc;
+    ctx.fillRect(ox, py, pw, bw*sc);
+    ctx.strokeRect(ox, py, pw, bw*sc);
+  }
+  // Dimensions
+  ctx.fillStyle = '#444'; ctx.strokeStyle = '#999'; ctx.lineWidth = 0.8; ctx.font = '11px Inter,sans-serif'; ctx.textAlign = 'center';
+  const dimY = oy + ph + 18;
+  ctx.beginPath(); ctx.moveTo(ox, dimY); ctx.lineTo(ox+pw, dimY); ctx.stroke();
+  ctx.fillText(`${totalW}"`, ox + pw/2, dimY + 12);
+  const dimX = ox + pw + 18;
+  ctx.save(); ctx.translate(dimX+10, oy+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText(`${L}"`, 0, 0); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(dimX, oy); ctx.lineTo(dimX, oy+ph); ctx.stroke();
+  ctx.fillStyle = '#888'; ctx.font = 'bold 10px Inter,sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('TOP VIEW', ox, oy - 10);
+}
+
+function drawSideView(c) {
+  const cv  = el('cv-side');
+  const ctx = cv.getContext('2d');
+  const { L, tn, tbw, tth, bn, bbw, bth, sh, st, sn } = c;
+  const totalH = bth + sh + tth;
+  const mg = 30, cw = cv.width-mg*2, ch = cv.height-mg*2;
+  const sc = Math.min(cw / L, ch / totalH * 2);
+  const pw = L * sc, ph = totalH * sc;
+  const ox = mg + (cw-pw)/2, oy = mg + (ch-ph)/2;
+
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+
+  // Bottom deck cross-sections — flush at ends, evenly gapped interior
+  for (let i = 0; i < bn; i++) {
+    let z;
+    if (bn === 1) { z = L/2; }
+    else if (i === 0) { z = bbw/2; }
+    else if (i === bn-1) { z = L - bbw/2; }
+    else {
+      const ni = bn-2, intStart = bbw, intEnd = L - bbw;
+      const gap = (intEnd - intStart - ni*bbw) / (ni + 1);
+      z = intStart + gap + (i-1)*(bbw + gap) + bbw/2;
+    }
+    const px = ox + (z - bbw/2)*sc;
+    ctx.fillStyle = i%2 ? '#c8a050' : '#d4aa60';
+    ctx.fillRect(px, oy+ph-bth*sc, bbw*sc, bth*sc);
+  }
+  // Stringer body (long bar)
+  ctx.fillStyle = '#8a6520';
+  ctx.fillRect(ox, oy+bth*sc, pw, sh*sc);
+  // Top deck cross-sections — flush at ends, evenly gapped interior
+  for (let i = 0; i < tn; i++) {
+    let z;
+    if (tn === 1) { z = L/2; }
+    else if (i === 0) { z = c.tbw/2; }
+    else if (i === tn-1) { z = L - c.tbw/2; }
+    else {
+      const ni = tn-2, intStart = c.tbw, intEnd = L - c.tbw;
+      const gap = (intEnd - intStart - ni*c.tbw) / (ni + 1);
+      z = intStart + gap + (i-1)*(c.tbw + gap) + c.tbw/2;
+    }
+    const px = ox + (z - c.tbw/2)*sc;
+    ctx.fillStyle = i%2 ? '#cc9f58' : '#d4aa68';
+    ctx.fillRect(px, oy, c.tbw*sc, tth*sc);
+  }
+
+  ctx.fillStyle='#888'; ctx.font='bold 10px Inter,sans-serif'; ctx.textAlign='left';
+  ctx.fillText('SIDE VIEW', ox, oy-8);
+  ctx.font='10px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#999';
+  ctx.fillText(`${L}"`, ox+pw/2, oy+ph+15);
+  ctx.save(); ctx.translate(ox-14, oy+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText(`${totalH.toFixed(2)}"`, 0, 0); ctx.restore();
+}
+
+function drawEndView(c) {
+  const cv  = el('cv-end');
+  const ctx = cv.getContext('2d');
+  const { W, tth, bth, sh, st, sn } = c;
+  const totalH = bth + sh + tth;
+  const mg = 26, cw = cv.width-mg*2, ch = cv.height-mg*2;
+  const sc = Math.min(cw / W, ch / totalH);
+  const pw = W * sc, ph = totalH * sc;
+  const ox = mg + (cw-pw)/2, oy = mg + (ch-ph)/2;
+
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+
+  // Background
+  ctx.fillStyle='#ffffff'; ctx.fillRect(ox, oy, pw, ph);
+
+  // Bottom deck (full width)
+  ctx.fillStyle='#c8a050'; ctx.fillRect(ox, oy+ph-bth*sc, pw, bth*sc);
+
+  // Stringer X positions — outer faces flush with pallet width edges
+  function strX(i) { return sn===1 ? W/2 : st/2 + i*((W-st)/(sn-1)); }
+
+  // Fork openings (white between stringers)
+  ctx.fillStyle='#ffffff';
+  for (let i=0; i<sn-1; i++) {
+    const x1 = strX(i), x2 = strX(i+1);
+    ctx.fillRect(ox + (x1+st/2)*sc, oy+bth*sc, (x2-x1-st)*sc, sh*sc);
+  }
+
+  // Stringers (cross-section)
+  ctx.fillStyle='#7a5c20';
+  for (let i=0; i<sn; i++) {
+    const x = strX(i);
+    ctx.fillRect(ox + (x-st/2)*sc, oy+bth*sc, st*sc, sh*sc);
+  }
+
+  // Top deck (full width)
+  ctx.fillStyle='#cc9f58'; ctx.fillRect(ox, oy, pw, tth*sc);
+
+  ctx.fillStyle='#888'; ctx.font='bold 10px Inter,sans-serif'; ctx.textAlign='left';
+  ctx.fillText('END VIEW', ox, oy-8);
+  ctx.font='10px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#999';
+  ctx.fillText(`${W}"`, ox+pw/2, oy+ph+15);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CUT LIST
+// ═══════════════════════════════════════════════════════════
+function buildCutList(c) {
+  const density  = DENSITY[c.species] || 2.9;
+  const costRate = +v('i-cost') || 1.20;
+  const leadW    = c.lbw > 0 ? c.lbw : c.tbw;
+  const totalW   = c.W + 2 * c.overhang;
+
+  const rows = c.type === 'stringer' ? [
+    { name:'Top Deck Board (inner)', qty:(c.tn-2)*c.qty, L:totalW, w:c.tbw,  t:c.tth },
+    { name:'Top Deck Board (lead)',  qty:2*c.qty,         L:totalW, w:leadW,   t:c.tth },
+    { name:'Bottom Deck Board',      qty:c.bn*c.qty,      L:totalW, w:c.bbw,   t:c.bth },
+    { name:'Stringer',               qty:c.sn*c.qty,      L:c.L,    w:c.sh,    t:c.st  },
+  ].filter(r => r.qty > 0) : [
+    { name:'Top Deck Board (inner)', qty:(c.tn-2)*c.qty, L:totalW,  w:c.tbw,   t:c.tth },
+    { name:'Top Deck Board (lead)',  qty:2*c.qty,         L:totalW,  w:leadW,   t:c.tth },
+    { name:'Bottom Deck Board',      qty:c.bn*c.qty,      L:totalW,  w:c.bbw,   t:c.bth },
+    { name:'Block',                  qty:9*c.qty,          L:c.st*2,  w:c.sh,    t:c.st*2 },
+  ].filter(r => r.qty > 0);
+
+  let totBF = 0, totWt = 0, totCost = 0;
+  el('cut-body').innerHTML = rows.map((r, i) => {
+    const bfEa   = bf(r.L, r.w, r.t);
+    const bfTot  = bfEa * r.qty;
+    const wt     = bfTot * density;
+    const cost   = bfTot * costRate;
+    totBF += bfTot; totWt += wt; totCost += cost;
+    return `<tr style="background:${i%2?'#f9f9f9':'#fff'}">
+      <td style="border:1px solid #eee;padding:6px 10px;">${r.name}</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;">${r.qty}</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;">${r.L}"</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;">${r.w}"</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;">${r.t}"</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;">${bfEa.toFixed(3)}</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;font-weight:500;">${bfTot.toFixed(2)}</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;">${wt.toFixed(1)}</td>
+      <td style="border:1px solid #eee;padding:6px 10px;text-align:right;">$${cost.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  el('cut-foot').innerHTML = `<tr style="background:#f0f7f0;font-weight:600;">
+    <td colspan="6" style="border:1px solid #eee;padding:6px 10px;text-align:right;color:#333;">Totals</td>
+    <td style="border:1px solid #eee;padding:6px 10px;text-align:right;color:#2e7d32;">${totBF.toFixed(2)}</td>
+    <td style="border:1px solid #eee;padding:6px 10px;text-align:right;color:#2e7d32;">${totWt.toFixed(1)} lbs</td>
+    <td style="border:1px solid #eee;padding:6px 10px;text-align:right;color:#2e7d32;">$${totCost.toFixed(2)}</td>
+  </tr>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════════════════
+function exportCSV(c) {
+  const density  = DENSITY[c.species] || 2.9;
+  const costRate = +v('i-cost') || 1.20;
+  const leadW    = c.lbw > 0 ? c.lbw : c.tbw;
+  const totalW   = c.W + 2 * c.overhang;
+
+  const rows = c.type === 'stringer' ? [
+    ['Top Deck Board (inner)', (c.tn-2)*c.qty, totalW, c.tbw, c.tth],
+    ['Top Deck Board (lead)',  2*c.qty,         totalW, leadW,  c.tth],
+    ['Bottom Deck Board',      c.bn*c.qty,      totalW, c.bbw,  c.bth],
+    ['Stringer',               c.sn*c.qty,      c.L,    c.sh,   c.st ],
+  ].filter(r => r[1] > 0) : [
+    ['Top Deck Board (inner)', (c.tn-2)*c.qty, totalW,  c.tbw,    c.tth],
+    ['Top Deck Board (lead)',  2*c.qty,         totalW,  leadW,    c.tth],
+    ['Bottom Deck Board',      c.bn*c.qty,      totalW,  c.bbw,    c.bth],
+    ['Block',                  9*c.qty,          c.st*2,  c.sh,     c.st*2],
+  ].filter(r => r[1] > 0);
+
+  let csv = 'Piece,Qty,Length (in),Width (in),Thickness (in),Bd Ft/ea,Total Bd Ft,Weight (lbs),Est Cost ($)\n';
+  rows.forEach(r => {
+    const bfEa  = bf(r[2], r[3], r[4]);
+    const bfTot = bfEa * r[1];
+    csv += `${r[0]},${r[1]},${r[2]},${r[3]},${r[4]},${bfEa.toFixed(3)},${bfTot.toFixed(2)},${(bfTot*density).toFixed(2)},${(bfTot*costRate).toFixed(2)}\n`;
+  });
+
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv], { type:'text/csv' })),
+    download: '360palette-cutlist.csv',
+  });
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHECKOUT SUMMARY
+// ═══════════════════════════════════════════════════════════
+function updateCoSummary(c) {
+  const s = el('co-summary');
+  if (!s) return;
+  const totalW = c.W + 2 * c.overhang;
+  s.innerHTML = `<strong style="color:#333;display:block;margin-bottom:6px;">Configuration Summary</strong>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;font-size:12px;">
+      <span>Pallet Type:</span><strong>${c.type==='stringer'?'Stringer':'Block'}</strong>
+      <span>Dimensions:</span><strong>${c.L}" L × ${totalW}" W × ${(c.bth+c.sh+c.tth).toFixed(2)}" H</strong>
+      <span>Top Deck Boards:</span><strong>${c.tn} @ ${c.tbw}" × ${c.tth}"</strong>
+      <span>Bottom Deck Boards:</span><strong>${c.bn} @ ${c.bbw}" × ${c.bth}"</strong>
+      <span>${c.type==='stringer'?'Stringers':'Blocks'}:</span><strong>${c.sn}</strong>
+      <span>Wood Species:</span><strong>${c.species}</strong>
+      <span>Est. Weight:</span><strong>${calcWeight(c)} lbs</strong>
+      <span>Load Capacity:</span><strong>${calcLoad(c).toLocaleString()} lbs</strong>
+      ${c.ht?'<span>Heat Treatment:</span><strong>Yes (ISPM-15)</strong>':''}
+      ${c.mb?'<span>Methyl Bromide:</span><strong>Yes</strong>':''}
+      ${c.paintOn?`<span>Paint:</span><strong>${c.paintCol}</strong>`:''}
+    </div>`;
+  if (el('co-qty')) el('co-qty').value = c.qty;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function showTab(name) {
+  ['sch','cut','3d','co','saved'].forEach(t => {
+    el('p-' +t).className = 'panel' + (t===name?' active':'');
+    el('tb-'+t).className = 'tab-btn' + (t===name?' active':'');
+  });
+  const c = cfg();
+  if (name === 'sch')   setTimeout(() => drawSchematic(c), 30);
+  if (name === 'cut')   buildCutList(c);
+  if (name === 'co')    updateCoSummary(c);
+  if (name === 'saved') renderSavedTab();
+  if (name === '3d')    setTimeout(onResize, 30);
+}
+
+function submitOrder(e) {
+  e.preventDefault();
+  alert('Thank you! Your quote request has been submitted.\nA 360 Palette Solutions representative will contact you within 1 business day.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SAVE / LOAD (localStorage)
+// ═══════════════════════════════════════════════════════════
+function getSaves() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+}
+
+function captureAllInputs() {
+  const ids = ['i-len','i-wid','i-qty','i-tn','i-tbw','i-tth','i-lbw','i-overhang',
+               'i-bn','i-bbw','i-bth','i-sn','i-sh','i-st','i-nw','i-nh','i-entry',
+               'i-species','i-grade','i-nailsize','i-nailpj','i-nailpat','i-nailmat',
+               'i-pcolor','i-stext','i-cost','i-preset'];
+  const chks = ['i-ht','i-mb','i-paint','i-stencil','i-chamfer','i-recycled'];
+  return {
+    type: palType,
+    inputs: ids.reduce((a, id) => { const e=el(id); if(e) a[id]=e.value; return a; }, {}),
+    checks: chks.reduce((a, id) => { const e=el(id); if(e) a[id]=e.checked; return a; }, {}),
+  };
+}
+
+function saveConfig() {
+  const name = prompt('Save as (config name):');
+  if (!name || !name.trim()) return;
+  const saves = getSaves();
+  saves[name.trim()] = captureAllInputs();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+  renderSavedTab();
+  alert(`Saved as "${name.trim()}"`);
+}
+
+function loadConfig(name) {
+  const data = getSaves()[name];
+  if (!data) return;
+  setPalletType(data.type || 'stringer');
+  Object.entries(data.inputs || {}).forEach(([id, val]) => { const e=el(id); if(e) e.value=val; });
+  Object.entries(data.checks || {}).forEach(([id, val]) => { const e=el(id); if(e) e.checked=val; });
+  el('paint-row').style.display   = el('i-paint').checked   ? 'flex'  : 'none';
+  el('stencil-row').style.display = el('i-stencil').checked ? 'block' : 'none';
+  refresh();
+  showTab('3d');
+}
+
+function deleteConfig(name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  const saves = getSaves();
+  delete saves[name];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+  renderSavedTab();
+}
+
+function escH(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderSavedTab() {
+  const saves = getSaves();
+  const keys  = Object.keys(saves);
+  const cards = el('saved-cards');
+  const noMsg = el('no-saves-msg');
+  noMsg.style.display = keys.length ? 'none' : 'block';
+  cards.innerHTML = keys.map(name => {
+    const d = saves[name];
+    const type = d.type === 'block' ? 'Block' : 'Stringer';
+    const len  = d.inputs?.['i-len'] || '?';
+    const wid  = d.inputs?.['i-wid'] || '?';
+    return `<div style="background:#fff;border:1px solid #e5e5e5;border-radius:6px;padding:14px;">
+      <div style="font-weight:600;font-size:13px;color:#222;margin-bottom:4px;">${escH(name)}</div>
+      <div style="font-size:12px;color:#888;margin-bottom:10px;">${type} · ${len}" × ${wid}"</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="loadConfig('${escH(name)}')" style="flex:1;background:#4caf50;color:#fff;border:none;border-radius:3px;padding:5px 0;font-size:12px;cursor:pointer;" onmouseover="this.style.background='#43a047'" onmouseout="this.style.background='#4caf50'">Load</button>
+        <button onclick="deleteConfig('${escH(name)}')" style="background:#fff0f0;color:#c33;border:1px solid #fcc;border-radius:3px;padding:5px 10px;font-size:12px;cursor:pointer;">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHARE VIA URL
+// ═══════════════════════════════════════════════════════════
+function encodeConfigToURL() {
+  try {
+    const data    = captureAllInputs();
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    const url     = location.href.split('#')[0] + '#cfg=' + encoded;
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = el('share-btn');
+      btn.textContent = 'Copied!';
+      btn.style.color = '#4caf50';
+      setTimeout(() => { btn.textContent = 'Copy Link'; btn.style.color = ''; }, 2500);
+    }).catch(() => { alert('Copy this URL:\n' + url); });
+  } catch(e) {}
+}
+
+function decodeConfigFromURL() {
+  const hash = location.hash;
+  if (!hash.startsWith('#cfg=')) return;
+  try {
+    const data = JSON.parse(decodeURIComponent(escape(atob(hash.slice(5)))));
+    setPalletType(data.type || 'stringer');
+    Object.entries(data.inputs || {}).forEach(([id, val]) => { const e=el(id); if(e) e.value=val; });
+    Object.entries(data.checks || {}).forEach(([id, val]) => { const e=el(id); if(e) e.checked=val; });
+    el('paint-row').style.display   = el('i-paint').checked   ? 'flex'  : 'none';
+    el('stencil-row').style.display = el('i-stencil').checked ? 'block' : 'none';
+    refresh();
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  switch(e.key) {
+    case '1': showTab('sch');   break;
+    case '2': showTab('cut');   break;
+    case '3': showTab('3d');    break;
+    case '4': showTab('co');    break;
+    case '5': showTab('saved'); break;
+    case 'r': case 'R': resetCam();       break;
+    case 'w': case 'W': toggleWire();     break;
+    case 'e': case 'E': toggleExploded(); break;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function initSidebarResize() {
+  const sidebar = el('sidebar');
+  const handle  = el('sidebar-handle');
+  const MIN_W   = 180, MAX_W = 420;
+  let dragging  = false, startX = 0, startW = 0;
+
+  handle.addEventListener('mousedown', e => {
+    dragging = true;
+    startX   = e.clientX;
+    startW   = sidebar.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.cursor     = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.min(MAX_W, Math.max(MIN_W, startW + (e.clientX - startX)));
+    sidebar.style.width = w + 'px';
+    onResize();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+  });
+}
+
+function wrapNumberInputs() {
+  document.querySelectorAll('input.di[type=number]').forEach(inp => {
+    const wrap = document.createElement('div');
+    wrap.className = 'num-wrap';
+    inp.parentNode.insertBefore(wrap, inp);
+
+    const btns = document.createElement('div');
+    btns.className = 'spin-btns';
+
+    const up = document.createElement('button');
+    up.className = 'spin-btn'; up.type = 'button'; up.title = 'Increase';
+    up.innerHTML = '▲';
+    up.addEventListener('click', () => {
+      inp.stepUp();
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const dn = document.createElement('button');
+    dn.className = 'spin-btn'; dn.type = 'button'; dn.title = 'Decrease';
+    dn.innerHTML = '▼';
+    dn.addEventListener('click', () => {
+      inp.stepDown();
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    btns.appendChild(up);
+    btns.appendChild(dn);
+    wrap.appendChild(btns);
+    wrap.appendChild(inp);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initSidebarResize();
+  wrapNumberInputs();
+  showTab('3d');
+  initThree();
+  decodeConfigFromURL();
+  refresh();
+  renderSavedTab();
+});
+</script>
+</body>
+</html>

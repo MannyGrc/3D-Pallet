@@ -1,0 +1,7 @@
+node_modules/
+temporary screenshots/
+.DS_Store
+*.png
+skills/
+CLAUDE.md
+DESIGNCLAUDE.md
