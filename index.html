@@ -128,9 +128,9 @@
   <!-- Measurement -->
   <div style="border-bottom:1px solid #2d2d2d;">
     <button onclick="toggleAcc('meas')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
-      Measurement<svg class="chevron open" id="ch-meas" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      Measurement<svg class="chevron closed" id="ch-meas" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
     </button>
-    <div id="acc-meas" class="acc-body open">
+    <div id="acc-meas" class="acc-body">
       <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
         <div class="row2"><label>Length (in)</label><input type="number" id="i-len" value="43" min="12" max="120" class="di" oninput="refresh()"></div>
         <div class="row2"><label>Width (in)</label><input type="number" id="i-wid" value="40" min="12" max="120" class="di" oninput="refresh()"></div>
@@ -142,9 +142,9 @@
   <!-- Top Deck Boards -->
   <div style="border-bottom:1px solid #2d2d2d;">
     <button onclick="toggleAcc('top')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
-      Top Deck Boards<svg class="chevron open" id="ch-top" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      Top Deck Boards<svg class="chevron closed" id="ch-top" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
     </button>
-    <div id="acc-top" class="acc-body open">
+    <div id="acc-top" class="acc-body">
       <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
         <div class="row2"><label>Count</label><input type="number" id="i-tn" value="5" min="2" max="20" class="di" oninput="refresh()"></div>
         <div class="row2">
@@ -164,13 +164,18 @@
   <!-- Bottom Deck Boards -->
   <div style="border-bottom:1px solid #2d2d2d;">
     <button onclick="toggleAcc('bot')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
-      Bottom Deck Boards<svg class="chevron open" id="ch-bot" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      Bottom Deck Boards<svg class="chevron closed" id="ch-bot" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
     </button>
-    <div id="acc-bot" class="acc-body open">
+    <div id="acc-bot" class="acc-body">
       <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
         <div class="row2"><label>Count</label><input type="number" id="i-bn" value="5" min="2" max="20" class="di" oninput="refresh()"></div>
         <div class="row2"><label>Board Width (in)</label><input type="number" id="i-bbw" value="3.5" min="1.5" max="12" step="0.25" class="di" oninput="refresh()"></div>
         <div class="row2"><label>Thickness (in)</label><input type="number" id="i-bth" value="0.75" min="0.375" max="2" step="0.125" class="di" oninput="refresh()"></div>
+        <div class="row2"><label>Lead Board Width</label><input type="number" id="i-blbw" value="0" min="0" max="12" step="0.25" class="di" title="0 = same as board width" oninput="refresh()"></div>
+        <div class="row2">
+          <span class="tip" style="font-size:11px;color:#999;">Overhang (in)<span class="tip-icon">?</span><span class="tip-box">How far bottom boards extend past the outer stringers on each side</span></span>
+          <input type="number" id="i-boverhang" value="0" min="0" max="6" step="0.25" class="di" oninput="refresh()">
+        </div>
       </div>
     </div>
   </div>
@@ -178,9 +183,9 @@
   <!-- Stringers / Blocks -->
   <div style="border-bottom:1px solid #2d2d2d;">
     <button onclick="toggleAcc('str')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:none;border:none;color:#bbb;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;">
-      <span id="lbl-str">Stringers</span><svg class="chevron open" id="ch-str" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      <span id="lbl-str">Stringers</span><svg class="chevron closed" id="ch-str" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
     </button>
-    <div id="acc-str" class="acc-body open">
+    <div id="acc-str" class="acc-body">
       <div style="padding:2px 12px 10px;display:flex;flex-direction:column;gap:6px;">
         <div class="row2"><label>Count</label><input type="number" id="i-sn" value="3" min="2" max="7" class="di" oninput="refresh()"></div>
         <div class="row2"><label>Height (in)</label><input type="number" id="i-sh" value="3.5" min="1.5" max="10" step="0.25" class="di" oninput="refresh()"></div>
@@ -531,9 +536,13 @@ function cfg() {
     bn:       +v('i-bn')       || 5,
     bbw:      +v('i-bbw')      || 3.5,
     bth:      +v('i-bth')      || 0.75,
+    blbw:     +v('i-blbw')     || 0,
+    boverhang:+v('i-boverhang')|| 0,
     sn:       +v('i-sn')       || 3,
     sh:       +v('i-sh')       || 3.5,
     st:       +v('i-st')       || 1.5,
+    nw:       +v('i-nw')       || 9,
+    nh:       +v('i-nh')       || 1.5,
     entry:    v('i-entry')     || '2way',
     species:  v('i-species')   || 'Mixed HW',
     ht:       el('i-ht')?.checked  || false,
@@ -555,8 +564,8 @@ function bf(l, w, t) { return (l * w * t) / 144; }
 
 function calcWeight(c) {
   const d = DENSITY[c.species] || 2.9;
-  let vol = bf(c.W + 2*c.overhang, c.tbw, c.tth) * c.tn
-          + bf(c.W + 2*c.overhang, c.bbw, c.bth) * c.bn
+  let vol = bf(c.W + 2*c.overhang,   c.tbw, c.tth) * c.tn
+          + bf(c.W + 2*c.boverhang,  c.bbw, c.bth) * c.bn
           + bf(c.L, c.sh, c.st) * c.sn;
   return (vol * d).toFixed(1);
 }
@@ -573,8 +582,8 @@ function calcNails(c) {
 }
 
 function calcTotalBF(c) {
-  let vol = bf(c.W + 2*c.overhang, c.tbw, c.tth) * c.tn
-          + bf(c.W + 2*c.overhang, c.bbw, c.bth) * c.bn
+  let vol = bf(c.W + 2*c.overhang,   c.tbw, c.tth) * c.tn
+          + bf(c.W + 2*c.boverhang,  c.bbw, c.bth) * c.bn
           + bf(c.L, c.sh, c.st) * c.sn;
   return (vol * c.qty).toFixed(2);
 }
@@ -829,6 +838,19 @@ function box(lx, ly, lz, px, py, pz, col) {
   return m;
 }
 
+// Returns true if a bottom board centered at z (width bw along L) overlaps a 4-way notch zone.
+// Notch zones are at ±L/4 with half-width nw/2. A board may not be placed over a notch
+// because there is no stringer material at that height to support it.
+function overlapsNotch(z, bw, L, nw) {
+  if (!nw || nw >= L / 2) return false;
+  const boardStart = z - bw / 2;
+  const boardEnd   = z + bw / 2;
+  const halfN = nw / 2;
+  const n1 = -L / 4, n2 = L / 4; // notch centers in 3D centered coords
+  return (boardEnd > n1 - halfN && boardStart < n1 + halfN) ||
+         (boardEnd > n2 - halfN && boardStart < n2 + halfN);
+}
+
 function buildPallet(c) {
   if (!scene) return;
 
@@ -849,17 +871,19 @@ function buildPallet(c) {
   strGroup  = new THREE.Group();
   palGroup.add(strGroup, topGroup, botGroup);
 
-  const { L, W, tn, tbw, tth, lbw, overhang, bn, bbw, bth, sh, st, sn, entry, species, paintOn, paintCol } = c;
+  const { L, W, tn, tbw, tth, lbw, overhang, bn, bbw, bth, sh, st, sn, entry, nw, nh, species, paintOn, paintCol, blbw, boverhang } = c;
   const WOOD       = SPECIES_WOOD[species] || SPECIES_WOOD['Mixed HW'];
   const STRINGER_C = SPECIES_STR[species]  || 0x8a6520;
   const BLOCK_C    = 0x7a5c1a;
 
-  const totalW = W + 2 * overhang; // board span including overhang
+  const totalW    = W + 2 * overhang;           // top board span
+  const totalWBot = W + 2 * boverhang;          // bottom board span
   const yBot   = bth / 2;
   const yStr   = bth + sh / 2;
   const yTop   = bth + sh + tth / 2;
 
-  const leadW = lbw > 0 ? lbw : tbw; // lead board face width
+  const leadW    = lbw  > 0 ? lbw  : tbw; // top lead board face width
+  const bleadW   = blbw > 0 ? blbw : bbw; // bottom lead board face width
 
   // Helper: compute board center positions along pallet length so end boards
   // are flush with the pallet ends and interior boards have equal gaps between them.
@@ -878,7 +902,25 @@ function buildPallet(c) {
     // Stringers — outer faces flush with pallet width edges
     for (let i = 0; i < sn; i++) {
       const x = sn === 1 ? 0 : -(W / 2 - st / 2) + i * ((W - st) / (sn - 1));
-      strGroup.add(box(st, sh, L,  x, yStr, 0, STRINGER_C));
+      if (entry === '4way' && nw > 0 && nh > 0 && nw < L / 2) {
+        // Two notches at ±L/4 (quarter-length positions), matching real 4-way stringer pallets
+        // Stringer built in 5 pieces: far-left cap | left top-rail | center section | right top-rail | far-right cap
+        const halfN   = nw / 2;
+        const capLen  = L / 4 - halfN;              // length of each end cap
+        const midLen  = L / 2 - nw;                 // length of center solid section
+        const capCz   = (3 * L / 4 + halfN) / 2;   // |center z| of end caps
+        const topH    = sh - nh;
+        const topY    = bth + nh + topH / 2;
+        // 3 solid full-height sections
+        strGroup.add(box(st, sh,   capLen, x, yStr, -capCz,   STRINGER_C)); // far left
+        strGroup.add(box(st, sh,   midLen, x, yStr,  0,        STRINGER_C)); // center
+        strGroup.add(box(st, sh,   capLen, x, yStr, +capCz,   STRINGER_C)); // far right
+        // 2 top-rails bridging each notch (material above the void)
+        strGroup.add(box(st, topH, nw,     x, topY, -L / 4,   STRINGER_C)); // over left notch
+        strGroup.add(box(st, topH, nw,     x, topY, +L / 4,   STRINGER_C)); // over right notch
+      } else {
+        strGroup.add(box(st, sh, L, x, yStr, 0, STRINGER_C));
+      }
     }
     // Top deck boards
     for (let i = 0; i < tn; i++) {
@@ -886,10 +928,12 @@ function buildPallet(c) {
       const z  = boardZ(i, tn, leadW, tbw, L);
       topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD[i % WOOD.length]));
     }
-    // Bottom deck boards
+    // Bottom deck boards — skip any that land on a 4-way notch zone
     for (let i = 0; i < bn; i++) {
-      const z = boardZ(i, bn, bbw, bbw, L);
-      botGroup.add(box(totalW, bth, bbw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
+      const bw = (i === 0 || i === bn - 1) ? bleadW : bbw;
+      const z  = boardZ(i, bn, bleadW, bbw, L);
+      if (entry === '4way' && overlapsNotch(z, bw, L, nw)) continue;
+      botGroup.add(box(totalWBot, bth, bw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
     }
   } else {
     // Block pallet — blocks flush within W and L
@@ -909,8 +953,10 @@ function buildPallet(c) {
       topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD[i % WOOD.length]));
     }
     for (let i = 0; i < bn; i++) {
-      const z = boardZ(i, bn, bbw, bbw, L);
-      botGroup.add(box(totalW, bth, bbw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
+      const bw = (i === 0 || i === bn - 1) ? bleadW : bbw;
+      const z  = boardZ(i, bn, bleadW, bbw, L);
+      if (entry === '4way' && overlapsNotch(z, bw, L, nw)) continue;
+      botGroup.add(box(totalWBot, bth, bw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
     }
   }
 
@@ -999,12 +1045,15 @@ function buildPallet(c) {
 
     // Bottom deck nails (head on bottom face, shank drives up into stringer)
     // Rule: lead boards >= 5.5" require a minimum of 3 nails per joint
+    // At 4-way notch zones there is no board AND no stringer material at bottom — skip nails there.
     const botShankLen = bth + penetration;
     for (let j = 0; j < bn; j++) {
       const isLead = (j === 0 || j === bn - 1);
-      const count  = (isLead && bbw >= 5.5) ? Math.max(c.nailsPerJoint, 3) : c.nailsPerJoint;
-      const zB     = boardZ(j, bn, bbw, bbw, L);
-      const offs   = jointOffsets(count, bbw);
+      const bw     = isLead ? bleadW : bbw;
+      const zB     = boardZ(j, bn, bleadW, bbw, L);
+      if (entry === '4way' && overlapsNotch(zB, bw, L, nw)) continue;
+      const count  = (isLead && bw >= 5.5) ? Math.max(c.nailsPerJoint, 3) : c.nailsPerJoint;
+      const offs   = jointOffsets(count, bw);
       for (const sx of strXArr) {
         for (const off of offs) {
           addNail(botGroup, sx + off.x, zB + off.z,
@@ -1016,21 +1065,6 @@ function buildPallet(c) {
     }
   }
 
-  // Forklift entry indicators for 4-way
-  if (entry === '4way') {
-    const arrowMat = new THREE.MeshBasicMaterial({ color: 0x4caf50, transparent: true, opacity: 0.55 });
-    const aH  = sh * 0.55;
-    const aL  = 9;
-    const yA  = bth + sh / 2;
-    [-1, 1].forEach(s => {
-      const m1 = new THREE.Mesh(new THREE.BoxGeometry(1, aH, aL), arrowMat);
-      m1.position.set(s * (W/2 + aL/2), yA, 0);
-      palGroup.add(m1);
-      const m2 = new THREE.Mesh(new THREE.BoxGeometry(aL, aH, 1), arrowMat);
-      m2.position.set(0, yA, s * (L/2 + aL/2));
-      palGroup.add(m2);
-    });
-  }
 
   // Paint override
   if (paintOn && paintCol) {
@@ -1072,6 +1106,18 @@ function drawTopView(c) {
     const x  = sn === 1 ? W/2 : st/2 + i * ((W - st) / (sn - 1));
     const px = ox + overhang*sc + (x - st/2)*sc;
     ctx.fillRect(px, oy, st*sc, ph);
+    // 4-way notch gaps at L/4 and 3L/4
+    if (c.entry === '4way' && c.nw > 0 && c.nw < L / 2) {
+      [L/4, 3*L/4].forEach(pos => {
+        const nPy = oy + (pos - c.nw/2) * sc;
+        const nPh = c.nw * sc;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(px, nPy, st*sc, nPh);
+        ctx.strokeStyle = '#aaa'; ctx.lineWidth = 0.5;
+        ctx.strokeRect(px, nPy, st*sc, nPh);
+      });
+      ctx.fillStyle = '#7a5c20';
+    }
   }
   // Top deck boards — end boards flush with pallet ends, interior evenly gapped
   ctx.strokeStyle = '#a07028'; ctx.lineWidth = 0.5;
@@ -1118,23 +1164,53 @@ function drawSideView(c) {
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
 
   // Bottom deck cross-sections — flush at ends, evenly gapped interior
+  // For 4-way entry, skip boards that land on a notch zone (no stringer material there)
+  const bleadW = c.blbw > 0 ? c.blbw : bbw;
+  const is4way = c.entry === '4way' && c.nw > 0 && c.nw < L / 2;
   for (let i = 0; i < bn; i++) {
-    let z;
+    const bw = (i === 0 || i === bn-1) ? bleadW : bbw;
+    let z; // absolute 0→L coords
     if (bn === 1) { z = L/2; }
-    else if (i === 0) { z = bbw/2; }
-    else if (i === bn-1) { z = L - bbw/2; }
+    else if (i === 0) { z = bleadW/2; }
+    else if (i === bn-1) { z = L - bleadW/2; }
     else {
-      const ni = bn-2, intStart = bbw, intEnd = L - bbw;
+      const ni = bn-2, intStart = bleadW, intEnd = L - bleadW;
       const gap = (intEnd - intStart - ni*bbw) / (ni + 1);
       z = intStart + gap + (i-1)*(bbw + gap) + bbw/2;
     }
-    const px = ox + (z - bbw/2)*sc;
+    // Notch zones in 0→L coords: centered at L/4 and 3L/4
+    if (is4way) {
+      const halfN = c.nw / 2;
+      const bStart = z - bw/2, bEnd = z + bw/2;
+      const inN1 = bEnd > (L/4 - halfN) && bStart < (L/4 + halfN);
+      const inN2 = bEnd > (3*L/4 - halfN) && bStart < (3*L/4 + halfN);
+      if (inN1 || inN2) continue;
+    }
+    const px = ox + (z - bw/2)*sc;
     ctx.fillStyle = i%2 ? '#c8a050' : '#d4aa60';
-    ctx.fillRect(px, oy+ph-bth*sc, bbw*sc, bth*sc);
+    ctx.fillRect(px, oy+ph-bth*sc, bw*sc, bth*sc);
   }
   // Stringer body (long bar)
   ctx.fillStyle = '#8a6520';
   ctx.fillRect(ox, oy+bth*sc, pw, sh*sc);
+  // 4-way notch voids at L/4 and 3L/4
+  if (c.entry === '4way' && c.nw > 0 && c.nh > 0 && c.nw < L / 2) {
+    const nPw = c.nw * sc;
+    const nPy = oy + bth*sc + (sh - c.nh)*sc;
+    const nPh = c.nh * sc;
+    [L/4, 3*L/4].forEach((pos, idx) => {
+      const nPx = ox + (pos - c.nw/2) * sc;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(nPx, nPy, nPw, nPh);
+      ctx.strokeStyle = '#bbb'; ctx.lineWidth = 0.5;
+      ctx.strokeRect(nPx, nPy, nPw, nPh);
+      if (idx === 0) {
+        ctx.fillStyle = '#888'; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`${c.nw}"w`, nPx + nPw/2, nPy - 3);
+        ctx.fillText(`${c.nh}"h`, nPx + nPw + 16, nPy + nPh/2 + 3);
+      }
+    });
+  }
   // Top deck cross-sections — flush at ends, evenly gapped interior
   for (let i = 0; i < tn; i++) {
     let z;
@@ -1162,21 +1238,26 @@ function drawSideView(c) {
 function drawEndView(c) {
   const cv  = el('cv-end');
   const ctx = cv.getContext('2d');
-  const { W, tth, bth, sh, st, sn } = c;
-  const totalH = bth + sh + tth;
+  const { W, tth, bth, sh, st, sn, overhang, boverhang } = c;
+  const totalH   = bth + sh + tth;
+  const totalWTop = W + 2 * overhang;
+  const totalWBot = W + 2 * boverhang;
+  const maxW = Math.max(totalWTop, totalWBot);
   const mg = 26, cw = cv.width-mg*2, ch = cv.height-mg*2;
-  const sc = Math.min(cw / W, ch / totalH);
-  const pw = W * sc, ph = totalH * sc;
-  const ox = mg + (cw-pw)/2, oy = mg + (ch-ph)/2;
+  const sc = Math.min(cw / maxW, ch / totalH);
+  const pwTop = totalWTop * sc, pwBot = totalWBot * sc, ph = totalH * sc;
+  const cx = mg + cw/2, oy = mg + (ch-ph)/2;
+  const oxTop = cx - pwTop/2, oxBot = cx - pwBot/2;
+  const ox = cx - W * sc / 2; // stringer reference (no overhang)
 
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
 
   // Background
-  ctx.fillStyle='#ffffff'; ctx.fillRect(ox, oy, pw, ph);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(oxBot, oy, pwBot, ph);
 
-  // Bottom deck (full width)
-  ctx.fillStyle='#c8a050'; ctx.fillRect(ox, oy+ph-bth*sc, pw, bth*sc);
+  // Bottom deck (full width with boverhang)
+  ctx.fillStyle='#c8a050'; ctx.fillRect(oxBot, oy+ph-bth*sc, pwBot, bth*sc);
 
   // Stringer X positions — outer faces flush with pallet width edges
   function strX(i) { return sn===1 ? W/2 : st/2 + i*((W-st)/(sn-1)); }
@@ -1195,13 +1276,13 @@ function drawEndView(c) {
     ctx.fillRect(ox + (x-st/2)*sc, oy+bth*sc, st*sc, sh*sc);
   }
 
-  // Top deck (full width)
-  ctx.fillStyle='#cc9f58'; ctx.fillRect(ox, oy, pw, tth*sc);
+  // Top deck (full width with overhang)
+  ctx.fillStyle='#cc9f58'; ctx.fillRect(oxTop, oy, pwTop, tth*sc);
 
   ctx.fillStyle='#888'; ctx.font='bold 10px Inter,sans-serif'; ctx.textAlign='left';
-  ctx.fillText('END VIEW', ox, oy-8);
+  ctx.fillText('END VIEW', oxTop, oy-8);
   ctx.font='10px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#999';
-  ctx.fillText(`${W}"`, ox+pw/2, oy+ph+15);
+  ctx.fillText(`${W}"`, ox + W*sc/2, oy+ph+15);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1210,19 +1291,23 @@ function drawEndView(c) {
 function buildCutList(c) {
   const density  = DENSITY[c.species] || 2.9;
   const costRate = +v('i-cost') || 1.20;
-  const leadW    = c.lbw > 0 ? c.lbw : c.tbw;
+  const leadW    = c.lbw  > 0 ? c.lbw  : c.tbw;
+  const bleadW   = c.blbw > 0 ? c.blbw : c.bbw;
   const totalW   = c.W + 2 * c.overhang;
+  const totalWBot = c.W + 2 * c.boverhang;
 
   const rows = c.type === 'stringer' ? [
-    { name:'Top Deck Board (inner)', qty:(c.tn-2)*c.qty, L:totalW, w:c.tbw,  t:c.tth },
-    { name:'Top Deck Board (lead)',  qty:2*c.qty,         L:totalW, w:leadW,   t:c.tth },
-    { name:'Bottom Deck Board',      qty:c.bn*c.qty,      L:totalW, w:c.bbw,   t:c.bth },
-    { name:'Stringer',               qty:c.sn*c.qty,      L:c.L,    w:c.sh,    t:c.st  },
+    { name:'Top Deck Board (inner)',    qty:(c.tn-2)*c.qty, L:totalW,    w:c.tbw,  t:c.tth },
+    { name:'Top Deck Board (lead)',     qty:2*c.qty,         L:totalW,    w:leadW,  t:c.tth },
+    { name:'Bottom Deck Board (inner)', qty:(c.bn-2)*c.qty, L:totalWBot, w:c.bbw,  t:c.bth },
+    { name:'Bottom Deck Board (lead)',  qty:2*c.qty,         L:totalWBot, w:bleadW, t:c.bth },
+    { name:'Stringer',                  qty:c.sn*c.qty,      L:c.L,       w:c.sh,   t:c.st  },
   ].filter(r => r.qty > 0) : [
-    { name:'Top Deck Board (inner)', qty:(c.tn-2)*c.qty, L:totalW,  w:c.tbw,   t:c.tth },
-    { name:'Top Deck Board (lead)',  qty:2*c.qty,         L:totalW,  w:leadW,   t:c.tth },
-    { name:'Bottom Deck Board',      qty:c.bn*c.qty,      L:totalW,  w:c.bbw,   t:c.bth },
-    { name:'Block',                  qty:9*c.qty,          L:c.st*2,  w:c.sh,    t:c.st*2 },
+    { name:'Top Deck Board (inner)',    qty:(c.tn-2)*c.qty, L:totalW,    w:c.tbw,  t:c.tth },
+    { name:'Top Deck Board (lead)',     qty:2*c.qty,         L:totalW,    w:leadW,  t:c.tth },
+    { name:'Bottom Deck Board (inner)', qty:(c.bn-2)*c.qty, L:totalWBot, w:c.bbw,  t:c.bth },
+    { name:'Bottom Deck Board (lead)',  qty:2*c.qty,         L:totalWBot, w:bleadW, t:c.bth },
+    { name:'Block',                     qty:9*c.qty,          L:c.st*2,    w:c.sh,   t:c.st*2 },
   ].filter(r => r.qty > 0);
 
   let totBF = 0, totWt = 0, totCost = 0;
@@ -1342,7 +1427,7 @@ function getSaves() {
 
 function captureAllInputs() {
   const ids = ['i-len','i-wid','i-qty','i-tn','i-tbw','i-tth','i-lbw','i-overhang',
-               'i-bn','i-bbw','i-bth','i-sn','i-sh','i-st','i-nw','i-nh','i-entry',
+               'i-bn','i-bbw','i-bth','i-blbw','i-boverhang','i-sn','i-sh','i-st','i-nw','i-nh','i-entry',
                'i-species','i-grade','i-nailsize','i-nailpj','i-nailpat','i-nailmat',
                'i-pcolor','i-stext','i-cost','i-preset'];
   const chks = ['i-ht','i-mb','i-paint','i-stencil','i-chamfer','i-recycled'];
