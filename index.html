@@ -232,7 +232,6 @@
   <div style="padding:10px 10px 8px;border-bottom:1px solid #2d2d2d;">
     <div style="font-size:9px;color:#666;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;">Preset Standard</div>
     <select id="i-preset" class="ds" style="width:100%;" onchange="applyPreset(this.value)">
-      <option value="custom">— Custom —</option>
       <option value="gma">GMA Standard (48×40)</option>
       <option value="eur">EUR / EPAL (800×1200mm)</option>
       <option value="chep">CHEP Blue (48×40)</option>
@@ -1674,7 +1673,7 @@ function deleteConfig(name) {
   renderUserPresetsDropdown();
   // Reset dropdown if deleted preset was selected
   const sel = el('i-preset');
-  if (sel.value === 'user:' + name) sel.value = 'custom';
+  if (sel.value === 'user:' + name) sel.value = 'gma';
 }
 
 function escH(s) {
