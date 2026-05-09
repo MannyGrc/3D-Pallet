@@ -8,6 +8,9 @@
   <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <style>
     *{box-sizing:border-box;}
     body{font-family:'Inter',sans-serif;margin:0;overflow:hidden;}
@@ -67,6 +70,13 @@
     .spin-btn{width:18px;height:11px;background:#2e7d32;border:none;color:#c8f5ca;font-size:7px;cursor:pointer;border-radius:2px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .12s,color .12s;}
     .spin-btn:hover{background:#4caf50;color:#fff;}
     .spin-btn:active{background:#388e3c;color:#fff;}
+    /* Auth gate */
+    #auth-gate{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(10,14,10,0.97);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+    #auth-gate.hidden{display:none;}
+    #auth-spinner{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:#111;}
+    #auth-spinner.hidden{display:none;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .spinner-ring{width:36px;height:36px;border:3px solid #2d2d2d;border-top-color:#4caf50;border-radius:50%;animation:spin 0.75s linear infinite;}
   </style>
 </head>
 <body class="bg-gray-100">
@@ -90,98 +100,101 @@
   </nav>
   <div class="ml-auto flex items-center gap-2">
     <button id="share-btn" onclick="encodeConfigToURL()" style="font-size:11px;color:#aaa;border:1px solid #383838;border-radius:4px;padding:4px 10px;background:transparent;cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">Copy Link</button>
-    <button id="auth-open-btn" onclick="openAuthModal()" style="font-size:12px;color:#aaa;border:1px solid #444;border-radius:4px;padding:4px 12px;background:transparent;cursor:pointer;transition:color .15s,border-color .15s;" onmouseover="this.style.color='#fff';this.style.borderColor='#777'" onmouseout="this.style.color='#aaa';this.style.borderColor='#444'">&#9679; Login</button>
+    <button id="auth-open-btn" style="font-size:12px;color:#aaa;border:1px solid #444;border-radius:4px;padding:4px 12px;background:transparent;cursor:pointer;transition:color .15s,border-color .15s;" onmouseover="this.style.color='#fff';this.style.borderColor='#777'" onmouseout="this.style.color='#aaa';this.style.borderColor='#444'">&#9679; Login</button>
   </div>
 </header>
 
-<!-- ── AUTH MODAL ──────────────────────────── -->
-<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);backdrop-filter:blur(3px);">
-  <div style="background:#1e1e1e;border:1px solid #2d2d2d;border-radius:8px;width:360px;max-width:calc(100vw - 32px);padding:32px 28px 28px;position:relative;box-shadow:0 24px 48px rgba(0,0,0,0.6),0 0 0 1px rgba(76,175,80,0.08);">
-    <!-- close -->
-    <button onclick="closeAuthModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#666;font-size:18px;cursor:pointer;line-height:1;transition:color .15s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">&times;</button>
+<!-- ── LOADING SPINNER ──────────────────────── -->
+<div id="auth-spinner"><div class="spinner-ring"></div></div>
 
-    <!-- logo -->
-    <div style="text-align:center;margin-bottom:22px;">
-      <div class="brand" style="font-size:22px;font-weight:800;color:#4caf50;letter-spacing:.04em;">360° Pallet Solutions</div>
-      <div style="font-size:12px;color:#666;margin-top:3px;">Configure, save, and share your pallet designs</div>
+<!-- ── AUTH GATE ────────────────────────────── -->
+<div id="auth-gate">
+  <div style="background:#1e1e1e;border:1px solid #2d2d2d;border-radius:8px;width:380px;max-width:calc(100vw - 32px);padding:36px 28px 28px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.8),0 0 0 1px rgba(76,175,80,0.1);">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:6px;">
+        <svg width="22" height="18" viewBox="0 0 26 22" fill="none">
+          <rect y="0"  width="26" height="3.5" rx="1" fill="#4caf50"/>
+          <rect y="5"  width="26" height="3.5" rx="1" fill="#4caf50"/>
+          <rect y="10" width="26" height="3.5" rx="1" fill="#4caf50"/>
+          <rect y="15" width="26" height="3.5" rx="1" fill="#4caf50"/>
+        </svg>
+        <div class="brand" style="font-size:22px;font-weight:800;color:#4caf50;letter-spacing:.04em;">360° Pallet Solutions</div>
+      </div>
+      <div style="font-size:12px;color:#555;">Configure, save, and share your pallet designs</div>
     </div>
 
-    <!-- tabs -->
-    <div id="auth-tabs" style="display:flex;border-bottom:1px solid #2d2d2d;margin-bottom:22px;">
-      <button id="tab-login"  onclick="switchAuthTab('login')"  style="flex:1;padding:8px 0;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;border-bottom:2px solid #4caf50;color:#fff;transition:color .15s,border-color .15s;">Login</button>
-      <button id="tab-signup" onclick="switchAuthTab('signup')" style="flex:1;padding:8px 0;font-size:13px;font-weight:500;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;color:#666;transition:color .15s,border-color .15s;">Sign Up</button>
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:1px solid #2d2d2d;margin-bottom:24px;">
+      <button id="gate-tab-login"  onclick="switchGateTab('login')"  style="flex:1;padding:8px 0;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;border-bottom:2px solid #4caf50;color:#fff;transition:color .15s,border-color .15s;">Login</button>
+      <button id="gate-tab-signup" onclick="switchGateTab('signup')" style="flex:1;padding:8px 0;font-size:13px;font-weight:500;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;color:#555;transition:color .15s,border-color .15s;">Sign Up</button>
     </div>
 
-    <!-- login form -->
-    <form id="auth-login-form" onsubmit="handleLogin(event)" style="display:flex;flex-direction:column;gap:13px;">
+    <!-- Login form -->
+    <form id="gate-login-form" onsubmit="handleLogin(event)" style="display:flex;flex-direction:column;gap:14px;">
       <div>
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;">Email</label>
-        <input type="email" id="login-email" placeholder="you@company.com" required
-          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:8px 11px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
+        <label style="font-size:11px;color:#777;display:block;margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase;">Email</label>
+        <input type="email" id="login-email" placeholder="you@company.com" required autocomplete="email"
+          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:9px 12px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
           onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"/>
       </div>
       <div>
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;">Password</label>
-        <input type="password" id="login-pass" placeholder="••••••••" required
-          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:8px 11px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
+        <label style="font-size:11px;color:#777;display:block;margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase;">Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" required autocomplete="current-password"
+          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:9px 12px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
           onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"/>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:-4px;">
-        <a href="#" style="font-size:11px;color:#4caf50;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Forgot password?</a>
+      <div style="display:flex;justify-content:flex-end;margin-top:-6px;">
+        <a href="#" onclick="handleForgotPassword(event)" style="font-size:11px;color:#4caf50;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Forgot password?</a>
       </div>
-      <button type="submit"
-        style="width:100%;padding:10px;background:#388e3c;color:#fff;font-size:13px;font-weight:600;border:none;border-radius:5px;cursor:pointer;letter-spacing:.03em;transition:background .15s,transform .1s;"
+      <button type="submit" id="gate-login-btn"
+        style="width:100%;padding:11px;background:#388e3c;color:#fff;font-size:13px;font-weight:600;border:none;border-radius:5px;cursor:pointer;letter-spacing:.03em;transition:background .15s,transform .1s;"
         onmouseover="this.style.background='#4caf50'" onmouseout="this.style.background='#388e3c'"
         onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
         Sign In
       </button>
-      <div id="login-err" style="font-size:11px;color:#ef5350;text-align:center;display:none;"></div>
+      <div id="login-err" style="font-size:11px;color:#ef5350;text-align:center;display:none;padding:4px 0;"></div>
     </form>
 
-    <!-- signup form -->
-    <form id="auth-signup-form" onsubmit="handleSignup(event)" style="display:none;flex-direction:column;gap:13px;">
+    <!-- Signup form -->
+    <form id="gate-signup-form" onsubmit="handleSignup(event)" style="display:none;flex-direction:column;gap:14px;">
       <div style="display:flex;gap:10px;">
         <div style="flex:1;">
-          <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;">First Name</label>
-          <input type="text" id="signup-first" placeholder="Jane" required
-            style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:8px 11px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
+          <label style="font-size:11px;color:#777;display:block;margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase;">First Name</label>
+          <input type="text" id="signup-first" placeholder="Jane" required autocomplete="given-name"
+            style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:9px 12px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
             onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"/>
         </div>
         <div style="flex:1;">
-          <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;">Last Name</label>
-          <input type="text" id="signup-last" placeholder="Smith" required
-            style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:8px 11px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
+          <label style="font-size:11px;color:#777;display:block;margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase;">Last Name</label>
+          <input type="text" id="signup-last" placeholder="Smith" required autocomplete="family-name"
+            style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:9px 12px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
             onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"/>
         </div>
       </div>
       <div>
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;">Company (optional)</label>
-        <input type="text" id="signup-company" placeholder="Oakland Pallet Co."
-          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:8px 11px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
+        <label style="font-size:11px;color:#777;display:block;margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase;">Email</label>
+        <input type="email" id="signup-email" placeholder="you@company.com" required autocomplete="email"
+          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:9px 12px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
           onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"/>
       </div>
       <div>
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;">Email</label>
-        <input type="email" id="signup-email" placeholder="you@company.com" required
-          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:8px 11px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
+        <label style="font-size:11px;color:#777;display:block;margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase;">Password <span style="color:#555;font-size:10px;">(min. 6 chars)</span></label>
+        <input type="password" id="signup-pass" placeholder="••••••••" required minlength="6" autocomplete="new-password"
+          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:9px 12px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
           onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"/>
       </div>
-      <div>
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;">Password</label>
-        <input type="password" id="signup-pass" placeholder="Min. 8 characters" required minlength="8"
-          style="width:100%;background:#252525;border:1px solid #383838;border-radius:4px;padding:8px 11px;color:#e2e2e2;font-size:13px;outline:none;transition:border-color .15s;"
-          onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"/>
-      </div>
-      <button type="submit"
-        style="width:100%;padding:10px;background:#388e3c;color:#fff;font-size:13px;font-weight:600;border:none;border-radius:5px;cursor:pointer;letter-spacing:.03em;transition:background .15s,transform .1s;"
+      <button type="submit" id="gate-signup-btn"
+        style="width:100%;padding:11px;background:#388e3c;color:#fff;font-size:13px;font-weight:600;border:none;border-radius:5px;cursor:pointer;letter-spacing:.03em;transition:background .15s,transform .1s;"
         onmouseover="this.style.background='#4caf50'" onmouseout="this.style.background='#388e3c'"
         onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
         Create Account
       </button>
-      <div id="signup-err" style="font-size:11px;color:#ef5350;text-align:center;display:none;"></div>
+      <div id="signup-err" style="font-size:11px;color:#ef5350;text-align:center;display:none;padding:4px 0;"></div>
     </form>
 
-    <div style="margin-top:18px;padding-top:16px;border-top:1px solid #2a2a2a;text-align:center;font-size:11px;color:#555;">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #252525;text-align:center;font-size:11px;color:#444;">
       By continuing you agree to our <a href="#" style="color:#4caf50;text-decoration:none;">Terms</a> &amp; <a href="#" style="color:#4caf50;text-decoration:none;">Privacy Policy</a>
     </div>
   </div>
@@ -598,6 +611,22 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
+// FIREBASE INIT — paste your config from the Firebase console
+// ═══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyBZh3q9AAzQncim5mGybM5uWKL4eGccI8M",
+  authDomain:        "pallet-configurator-e52d2.firebaseapp.com",
+  projectId:         "pallet-configurator-e52d2",
+  storageBucket:     "pallet-configurator-e52d2.firebasestorage.app",
+  messagingSenderId: "1072408069803",
+  appId:             "1:1072408069803:web:62b68336f6202a6fff19ee"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+let userPresets = {};   // in-memory cache, populated after login
+
+// ═══════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════
 const PRESETS = {
@@ -623,7 +652,6 @@ const SPECIES_STR = {
   'Mixed HW':0x8a6520,'S. Yellow Pine':0x8a5010,'Oak':0x6a4510,'Spruce/Pine/Fir':0xa09050,'Poplar':0x888040,
 };
 
-const STORAGE_KEY = '360pallet_saves';
 
 // ═══════════════════════════════════════════════════════════
 // STATE
@@ -1550,10 +1578,24 @@ function submitOrder(e) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SAVE / LOAD (localStorage)
+// PRESETS — Firestore-backed, in-memory cache
 // ═══════════════════════════════════════════════════════════
+
+async function loadUserPresets() {
+  userPresets = {};
+  if (!auth.currentUser) return;
+  try {
+    const snap = await db
+      .collection('users').doc(auth.currentUser.uid)
+      .collection('presets').get();
+    snap.forEach(doc => { userPresets[doc.id] = doc.data(); });
+  } catch (err) {
+    console.error('Failed to load presets:', err);
+  }
+}
+
 function getSaves() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+  return userPresets;
 }
 
 function captureAllInputs() {
@@ -1570,8 +1612,7 @@ function captureAllInputs() {
 }
 
 function openPresetModal() {
-  const saves = getSaves();
-  const keys = Object.keys(saves);
+  const keys = Object.keys(userPresets);
   const nameInput = el('preset-name-input');
   const updateRow = el('preset-update-row');
   const updateSel = el('preset-update-select');
@@ -1582,7 +1623,6 @@ function openPresetModal() {
   title.textContent = 'Save as Preset';
   saveBtn.textContent = 'Save Preset';
 
-  // Populate update dropdown if any presets exist
   if (keys.length) {
     updateRow.style.display = 'block';
     updateSel.innerHTML = '<option value="">— pick a preset to overwrite —</option>' +
@@ -1614,18 +1654,34 @@ function closePresetModal() {
   el('preset-save-modal').style.display = 'none';
 }
 
-function savePresetFromModal() {
+async function savePresetFromModal() {
   const name = el('preset-name-input').value.trim();
   if (!name) { el('preset-name-input').focus(); return; }
-  const saves = getSaves();
-  saves[name] = captureAllInputs();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
-  closePresetModal();
-  renderSavedTab();
-  renderUserPresetsDropdown();
-  // Flash the dropdown to the new preset
-  const sel = el('i-preset');
-  sel.value = 'user:' + name;
+  if (name.includes('/')) { alert('Preset name cannot contain a slash (/).'); return; }
+  if (!auth.currentUser) return;
+
+  const data = captureAllInputs();
+  const btn  = el('preset-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    await db
+      .collection('users').doc(auth.currentUser.uid)
+      .collection('presets').doc(name)
+      .set(data);
+    userPresets[name] = data;
+    closePresetModal();
+    renderSavedTab();
+    renderUserPresetsDropdown();
+    el('i-preset').value = 'user:' + name;
+  } catch (err) {
+    console.error('Save preset failed:', err);
+    alert('Could not save preset. Check your connection and try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Preset';
+  }
 }
 
 function saveConfig() {
@@ -1634,11 +1690,9 @@ function saveConfig() {
 
 function renderUserPresetsDropdown() {
   const sel = el('i-preset');
-  // Remove existing user optgroup if present
   const old = sel.querySelector('optgroup[data-user]');
   if (old) old.remove();
-  const saves = getSaves();
-  const keys = Object.keys(saves);
+  const keys = Object.keys(userPresets);
   if (!keys.length) return;
   const grp = document.createElement('optgroup');
   grp.label = 'My Presets';
@@ -1653,7 +1707,7 @@ function renderUserPresetsDropdown() {
 }
 
 function loadConfig(name) {
-  const data = getSaves()[name];
+  const data = userPresets[name];
   if (!data) return;
   setPalletType(data.type || 'stringer');
   Object.entries(data.inputs || {}).forEach(([id, val]) => { const e=el(id); if(e) e.value=val; });
@@ -1664,16 +1718,23 @@ function loadConfig(name) {
   showTab('3d');
 }
 
-function deleteConfig(name) {
+async function deleteConfig(name) {
   if (!confirm(`Delete "${name}"?`)) return;
-  const saves = getSaves();
-  delete saves[name];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
-  renderSavedTab();
-  renderUserPresetsDropdown();
-  // Reset dropdown if deleted preset was selected
-  const sel = el('i-preset');
-  if (sel.value === 'user:' + name) sel.value = 'gma';
+  if (!auth.currentUser) return;
+  try {
+    await db
+      .collection('users').doc(auth.currentUser.uid)
+      .collection('presets').doc(name)
+      .delete();
+    delete userPresets[name];
+    renderSavedTab();
+    renderUserPresetsDropdown();
+    const sel = el('i-preset');
+    if (sel.value === 'user:' + name) sel.value = 'gma';
+  } catch (err) {
+    console.error('Delete preset failed:', err);
+    alert('Could not delete preset. Check your connection and try again.');
+  }
 }
 
 function escH(s) {
@@ -1681,13 +1742,12 @@ function escH(s) {
 }
 
 function renderSavedTab() {
-  const saves = getSaves();
-  const keys  = Object.keys(saves);
+  const keys  = Object.keys(userPresets);
   const cards = el('saved-cards');
   const noMsg = el('no-saves-msg');
   noMsg.style.display = keys.length ? 'none' : 'block';
   cards.innerHTML = keys.map(name => {
-    const d = saves[name];
+    const d = userPresets[name];
     const type = d.type === 'block' ? 'Block' : 'Stringer';
     const len  = d.inputs?.['i-len'] || '?';
     const wid  = d.inputs?.['i-wid'] || '?';
@@ -1824,148 +1884,165 @@ window.addEventListener('DOMContentLoaded', () => {
   initThree();
   decodeConfigFromURL();
   refresh();
-  renderSavedTab();
-  renderUserPresetsDropdown();
   initAuth();
+  // renderSavedTab / renderUserPresetsDropdown run inside onAuthStateChanged after login
 });
 
-// ── AUTH ────────────────────────────────────────────────────────────────────
+// ── AUTH ─────────────────────────────────────────────────────────────────────
 let currentUser = null;
 
 function initAuth() {
-  // Restore session from localStorage
-  const saved = localStorage.getItem('pallet_user');
-  if (saved) { currentUser = JSON.parse(saved); updateAuthButton(); }
-
-  // Close modal on backdrop click
-  document.getElementById('auth-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeAuthModal();
+  auth.onAuthStateChanged(async (user) => {
+    el('auth-spinner').classList.add('hidden');
+    if (user) {
+      currentUser = user;
+      el('auth-gate').classList.add('hidden');
+      updateAuthButton();
+      await loadUserPresets();
+      renderSavedTab();
+      renderUserPresetsDropdown();
+    } else {
+      currentUser = null;
+      userPresets = {};
+      el('auth-gate').classList.remove('hidden');
+      updateAuthButton();
+      renderSavedTab();
+      renderUserPresetsDropdown();
+    }
   });
 
-  // Close on Escape key
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAuthModal();
+    if (e.key === 'Escape') { const menu = el('user-menu'); if (menu) menu.remove(); }
   });
 }
 
-function openAuthModal() {
-  const modal = document.getElementById('auth-modal');
-  modal.style.display = 'flex';
-  setTimeout(() => modal.querySelector('input').focus(), 60);
-}
-
-function closeAuthModal() {
-  document.getElementById('auth-modal').style.display = 'none';
-}
-
-function switchAuthTab(tab) {
+function switchGateTab(tab) {
   const isLogin = tab === 'login';
-  document.getElementById('auth-login-form').style.display  = isLogin ? 'flex' : 'none';
-  document.getElementById('auth-signup-form').style.display = isLogin ? 'none' : 'flex';
-
-  const tLogin  = document.getElementById('tab-login');
-  const tSignup = document.getElementById('tab-signup');
-  tLogin.style.borderBottomColor  = isLogin ? '#4caf50' : 'transparent';
-  tLogin.style.color               = isLogin ? '#fff'    : '#666';
-  tLogin.style.fontWeight          = isLogin ? '600'     : '500';
-  tSignup.style.borderBottomColor = isLogin ? 'transparent' : '#4caf50';
-  tSignup.style.color              = isLogin ? '#666'    : '#fff';
-  tSignup.style.fontWeight         = isLogin ? '500'     : '600';
+  el('gate-login-form').style.display  = isLogin ? 'flex' : 'none';
+  el('gate-signup-form').style.display = isLogin ? 'none' : 'flex';
+  const tL = el('gate-tab-login'), tS = el('gate-tab-signup');
+  tL.style.borderBottomColor = isLogin ? '#4caf50' : 'transparent';
+  tL.style.color             = isLogin ? '#fff'    : '#555';
+  tL.style.fontWeight        = isLogin ? '600'     : '500';
+  tS.style.borderBottomColor = isLogin ? 'transparent' : '#4caf50';
+  tS.style.color             = isLogin ? '#555'    : '#fff';
+  tS.style.fontWeight        = isLogin ? '500'     : '600';
+  el('login-err').style.display  = 'none';
+  el('signup-err').style.display = 'none';
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
-  const err   = document.getElementById('login-err');
-
-  // Look up stored account
-  const accounts = JSON.parse(localStorage.getItem('pallet_accounts') || '{}');
-  if (!accounts[email]) {
-    showAuthErr(err, 'No account found. Please sign up first.'); return;
+  const email = el('login-email').value.trim();
+  const pass  = el('login-pass').value;
+  const btn   = el('gate-login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  el('login-err').style.display = 'none';
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged handles hiding the gate and loading presets
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Sign In';
+    showAuthErr(el('login-err'), mapAuthError(err.code));
   }
-  if (accounts[email].password !== btoa(pass)) {
-    showAuthErr(err, 'Incorrect password.'); return;
-  }
-
-  currentUser = { email, name: accounts[email].name };
-  localStorage.setItem('pallet_user', JSON.stringify(currentUser));
-  updateAuthButton();
-  closeAuthModal();
 }
 
-function handleSignup(e) {
+async function handleSignup(e) {
   e.preventDefault();
-  const first   = document.getElementById('signup-first').value.trim();
-  const last    = document.getElementById('signup-last').value.trim();
-  const company = document.getElementById('signup-company').value.trim();
-  const email   = document.getElementById('signup-email').value.trim();
-  const pass    = document.getElementById('signup-pass').value;
-  const err     = document.getElementById('signup-err');
-
-  const accounts = JSON.parse(localStorage.getItem('pallet_accounts') || '{}');
-  if (accounts[email]) {
-    showAuthErr(err, 'An account with this email already exists.'); return;
+  const first = el('signup-first').value.trim();
+  const last  = el('signup-last').value.trim();
+  const email = el('signup-email').value.trim();
+  const pass  = el('signup-pass').value;
+  const btn   = el('gate-signup-btn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  el('signup-err').style.display = 'none';
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: first + ' ' + last });
+    // onAuthStateChanged handles the rest
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Create Account';
+    showAuthErr(el('signup-err'), mapAuthError(err.code));
   }
-
-  accounts[email] = { name: first + ' ' + last, company, password: btoa(pass) };
-  localStorage.setItem('pallet_accounts', JSON.stringify(accounts));
-
-  currentUser = { email, name: first + ' ' + last };
-  localStorage.setItem('pallet_user', JSON.stringify(currentUser));
-  updateAuthButton();
-  closeAuthModal();
 }
 
-function logOut() {
-  currentUser = null;
-  localStorage.removeItem('pallet_user');
-  updateAuthButton();
+async function logOut() {
+  try {
+    await auth.signOut();
+    const menu = el('user-menu'); if (menu) menu.remove();
+  } catch (err) { console.error('Sign out failed:', err); }
 }
 
 function updateAuthButton() {
-  const btn = document.getElementById('auth-open-btn');
+  const btn = el('auth-open-btn');
   if (currentUser) {
-    const initials = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
-    btn.innerHTML = `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#388e3c;color:#fff;font-size:10px;font-weight:700;margin-right:5px;">${initials}</span>${currentUser.name.split(' ')[0]}`;
-    btn.onclick = showUserMenu;
-    btn.style.color = '#ccc';
-    btn.style.borderColor = '#4caf50';
+    const name     = currentUser.displayName || currentUser.email;
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    btn.innerHTML  = `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#388e3c;color:#fff;font-size:10px;font-weight:700;margin-right:5px;">${initials}</span>${name.split(' ')[0]}`;
+    btn.onclick    = showUserMenu;
+    btn.style.color = '#ccc'; btn.style.borderColor = '#4caf50';
   } else {
-    btn.innerHTML = '&#9679; Login';
-    btn.onclick = openAuthModal;
-    btn.style.color = '#aaa';
-    btn.style.borderColor = '#444';
+    btn.innerHTML  = '&#9679; Login';
+    btn.onclick    = null;
+    btn.style.color = '#aaa'; btn.style.borderColor = '#444';
   }
 }
 
 function showUserMenu() {
-  // Toggle a small dropdown below the button
-  let menu = document.getElementById('user-menu');
+  let menu = el('user-menu');
   if (menu) { menu.remove(); return; }
-  const btn = document.getElementById('auth-open-btn');
+  const btn = el('auth-open-btn');
   const r   = btn.getBoundingClientRect();
   menu = document.createElement('div');
   menu.id = 'user-menu';
-  menu.style.cssText = `position:fixed;top:${r.bottom+6}px;right:${window.innerWidth - r.right}px;background:#1e1e1e;border:1px solid #2d2d2d;border-radius:5px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:999;min-width:160px;overflow:hidden;`;
+  menu.style.cssText = `position:fixed;top:${r.bottom+6}px;right:${window.innerWidth-r.right}px;background:#1e1e1e;border:1px solid #2d2d2d;border-radius:5px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:2001;min-width:170px;overflow:hidden;`;
+  const name = currentUser.displayName || currentUser.email;
   menu.innerHTML = `
     <div style="padding:10px 14px;border-bottom:1px solid #2d2d2d;">
-      <div style="font-size:12px;color:#ccc;font-weight:600;">${currentUser.name}</div>
-      <div style="font-size:10px;color:#666;margin-top:2px;">${currentUser.email}</div>
+      <div style="font-size:12px;color:#ccc;font-weight:600;">${escH(name)}</div>
+      <div style="font-size:10px;color:#666;margin-top:2px;">${escH(currentUser.email)}</div>
     </div>
-    <button onclick="logOut();document.getElementById('user-menu')?.remove();" style="width:100%;padding:9px 14px;text-align:left;background:none;border:none;color:#ef5350;font-size:12px;cursor:pointer;transition:background .12s;" onmouseover="this.style.background='#2a2020'" onmouseout="this.style.background='none'">Sign out</button>
+    <button onclick="logOut()" style="width:100%;padding:9px 14px;text-align:left;background:none;border:none;color:#ef5350;font-size:12px;cursor:pointer;transition:background .12s;" onmouseover="this.style.background='#2a2020'" onmouseout="this.style.background='none'">Sign out</button>
   `;
   document.body.appendChild(menu);
-  // close on outside click
-  setTimeout(() => document.addEventListener('click', function handler(e) {
-    if (!menu.contains(e.target) && e.target !== btn) { menu.remove(); document.removeEventListener('click', handler); }
+  setTimeout(() => document.addEventListener('click', function handler(ev) {
+    if (!menu.contains(ev.target) && ev.target !== btn) { menu.remove(); document.removeEventListener('click', handler); }
   }), 0);
 }
 
-function showAuthErr(el, msg) {
-  el.textContent = msg;
-  el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 4000);
+async function handleForgotPassword(e) {
+  e.preventDefault();
+  const email = el('login-email').value.trim();
+  if (!email) { showAuthErr(el('login-err'), 'Enter your email above first.'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    el('login-err').style.color = '#4caf50';
+    showAuthErr(el('login-err'), 'Password reset email sent. Check your inbox.');
+    setTimeout(() => { el('login-err').style.color = '#ef5350'; }, 5000);
+  } catch (err) {
+    showAuthErr(el('login-err'), mapAuthError(err.code));
+  }
+}
+
+function mapAuthError(code) {
+  const map = {
+    'auth/user-not-found':         'No account found with this email.',
+    'auth/wrong-password':         'Incorrect password. Try again.',
+    'auth/invalid-credential':     'Incorrect email or password.',
+    'auth/email-already-in-use':   'An account with this email already exists.',
+    'auth/weak-password':          'Password must be at least 6 characters.',
+    'auth/invalid-email':          'Please enter a valid email address.',
+    'auth/too-many-requests':      'Too many failed attempts. Try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/user-disabled':          'This account has been disabled.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+function showAuthErr(elRef, msg) {
+  elRef.textContent = msg;
+  elRef.style.display = 'block';
+  setTimeout(() => { if (elRef) elRef.style.display = 'none'; }, 5000);
 }
 
 </script>
