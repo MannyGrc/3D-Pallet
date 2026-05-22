@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>360 Pallet Solutions — Pallet Configurator</title>
+  <title>Pallet Bench — Pallet Configurator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
@@ -77,6 +77,14 @@
     #auth-spinner.hidden{display:none;}
     @keyframes spin{to{transform:rotate(360deg);}}
     .spinner-ring{width:36px;height:36px;border:3px solid #2d2d2d;border-top-color:#4caf50;border-radius:50%;animation:spin 0.75s linear infinite;}
+    @media print {
+      header, #sidebar, #sidebar-handle, #settings-drawer, #settings-backdrop,
+      #auth-gate, #auth-spinner, .tab-bar, #kbd-legend { display: none !important; }
+      .panel { display: none !important; }
+      body[data-print-target="sch"] #p-sch,
+      body[data-print-target="cut"] #p-cut { display: block !important; overflow: visible !important; }
+      #main { margin-left: 0 !important; width: 100% !important; }
+    }
   </style>
 </head>
 <body class="bg-gray-100">
@@ -91,8 +99,8 @@
       <rect y="15" width="26" height="3.5" rx="1" fill="#4caf50"/>
     </svg>
     <div class="brand leading-none">
-      <div style="font-size:15px;font-weight:800;color:#4caf50;letter-spacing:.03em;">360°</div>
-      <div style="font-size:9px;color:#aaa;letter-spacing:.12em;text-transform:uppercase;">Pallet Solutions</div>
+      <div style="font-size:15px;font-weight:800;color:#4caf50;letter-spacing:.03em;">Pallet</div>
+      <div style="font-size:9px;color:#aaa;letter-spacing:.12em;text-transform:uppercase;">Bench</div>
     </div>
   </div>
   <nav class="flex h-full items-end">
@@ -120,7 +128,7 @@
           <rect y="10" width="26" height="3.5" rx="1" fill="#4caf50"/>
           <rect y="15" width="26" height="3.5" rx="1" fill="#4caf50"/>
         </svg>
-        <div class="brand" style="font-size:22px;font-weight:800;color:#4caf50;letter-spacing:.04em;">360° Pallet Solutions</div>
+        <div class="brand" style="font-size:22px;font-weight:800;color:#4caf50;letter-spacing:.04em;">Pallet Bench</div>
       </div>
       <div style="font-size:12px;color:#555;">Configure, save, and share your pallet designs</div>
     </div>
@@ -470,12 +478,20 @@
     </div>
   </div>
 
-  <!-- Bottom buttons -->
-  <div style="margin-top:auto;padding:10px;display:flex;flex-direction:column;gap:6px;">
-    <div style="display:flex;gap:6px;">
-      <button onclick="openPresetModal()" style="flex:1;background:#2d2d2d;color:#bbb;border:1px solid #3a3a3a;border-radius:4px;padding:8px 0;font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#383838'" onmouseout="this.style.background='#2d2d2d'">Save</button>
-      <button onclick="window.print()" style="flex:1;background:#4caf50;color:#fff;border:none;border-radius:4px;padding:8px 0;font-size:12px;font-weight:700;letter-spacing:.08em;cursor:pointer;" onmouseover="this.style.background='#43a047'" onmouseout="this.style.background='#4caf50'">PRINT</button>
+  <!-- Print Options — shown only when Schematic tab is active -->
+  <div id="sidebar-print-opts" style="display:none;border-bottom:1px solid #2d2d2d;border-left:3px solid #4caf50;background:#111a11;">
+    <div style="padding:10px 12px 10px 10px;">
+      <div style="font-size:9px;color:#4caf50;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:8px;">⎙ Print Options</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <button onclick="printPanel('sch')" style="width:100%;background:#1c2e1c;color:#aad4aa;border:1px solid #2e4a2e;border-radius:4px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;text-align:left;letter-spacing:.02em;transition:background .12s;" onmouseover="this.style.background='#243824'" onmouseout="this.style.background='#1c2e1c'">Print Schematic</button>
+        <button onclick="printPanel('cut')" style="width:100%;background:#1c2e1c;color:#aad4aa;border:1px solid #2e4a2e;border-radius:4px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;text-align:left;letter-spacing:.02em;transition:background .12s;" onmouseover="this.style.background='#243824'" onmouseout="this.style.background='#1c2e1c'">Print Cut List</button>
+      </div>
     </div>
+  </div>
+
+  <!-- Bottom buttons -->
+  <div style="margin-top:auto;padding:10px;">
+    <button onclick="openPresetModal()" style="width:100%;background:#2d2d2d;color:#bbb;border:1px solid #3a3a3a;border-radius:4px;padding:8px 0;font-size:12px;font-weight:600;cursor:pointer;" onmouseover="this.style.background='#383838'" onmouseout="this.style.background='#2d2d2d'">Save</button>
   </div>
 </aside>
 
@@ -534,10 +550,88 @@
     <!-- Schematic -->
     <div id="p-sch" class="panel" style="background:#fff;overflow:auto;padding:24px;">
       <h2 style="font-size:13px;font-weight:600;color:#444;margin:0 0 16px;">Schematic</h2>
+      <!-- Company info header — shown when settings are saved -->
+      <div id="sch-company-block" style="display:none;margin-bottom:20px;padding:14px 18px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;border-left:3px solid #4caf50;">
+        <div id="sch-co-name"    style="font-size:15px;font-weight:700;color:#222;font-family:'Barlow Condensed',sans-serif;letter-spacing:.02em;"></div>
+        <div id="sch-co-contact" style="font-size:12px;color:#555;margin-top:4px;"></div>
+        <div id="sch-co-phone"   style="font-size:12px;color:#555;"></div>
+        <div id="sch-co-email"   style="font-size:12px;color:#555;"></div>
+        <div id="sch-co-address" style="font-size:12px;color:#555;margin-top:2px;white-space:pre-line;"></div>
+      </div>
+      <!-- Cut list summary embedded in schematic -->
+      <div id="sch-cut-wrap" style="margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:12px;font-weight:600;color:#444;">Cut List</span>
+          <span id="sch-cut-qty-label" style="font-size:11px;color:#888;"></span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead>
+            <tr style="background:#f7f7f7;">
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:left;font-weight:600;color:#555;">Piece</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Qty</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Length</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Width</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Thick</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Bd Ft/ea</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Total Bd Ft</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Weight (lbs)</th>
+              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Est. Cost</th>
+            </tr>
+          </thead>
+          <tbody id="sch-cut-body"></tbody>
+          <tfoot id="sch-cut-foot"></tfoot>
+        </table>
+      </div>
+      <!-- Diagrams -->
       <div style="display:flex;gap:24px;flex-wrap:wrap;">
         <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Top View</p><canvas id="cv-top" width="480" height="380" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
         <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Side View</p><canvas id="cv-side" width="380" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
         <div><p style="font-size:11px;color:#888;margin:0 0 5px;">End View</p><canvas id="cv-end" width="240" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Settings Drawer -->
+    <div id="settings-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2999;" onclick="closeSettingsDrawer()"></div>
+    <div id="settings-drawer" style="position:fixed;top:0;right:0;height:100%;width:340px;background:#202020;border-left:1px solid #2d2d2d;z-index:3000;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;">
+      <!-- Drawer header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;border-bottom:1px solid #2d2d2d;flex-shrink:0;">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#4caf50;letter-spacing:.04em;">Settings</div>
+          <div style="font-size:10px;color:#666;letter-spacing:.1em;text-transform:uppercase;margin-top:1px;">Account &amp; Company</div>
+        </div>
+        <button onclick="closeSettingsDrawer()" style="background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:4px 6px;border-radius:4px;line-height:1;transition:color .12s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">×</button>
+      </div>
+      <!-- Drawer body -->
+      <div style="flex:1;overflow-y:auto;padding:20px;">
+        <div style="font-size:10px;color:#4caf50;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:12px;">Company Info</div>
+        <p style="font-size:11px;color:#666;margin:0 0 16px;line-height:1.5;">This information will appear on the Schematic page so suppliers have your contact details.</p>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="display:block;font-size:11px;color:#aaa;margin-bottom:5px;letter-spacing:.03em;">Company Name</label>
+            <input id="s-company" type="text" placeholder="e.g. Oakland Pallet Co." style="width:100%;background:#171717;border:1px solid #383838;border-radius:4px;color:#e0e0e0;font-size:13px;padding:8px 10px;box-sizing:border-box;outline:none;transition:border-color .15s;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#aaa;margin-bottom:5px;letter-spacing:.03em;">Contact Name</label>
+            <input id="s-contact" type="text" placeholder="e.g. John Smith" style="width:100%;background:#171717;border:1px solid #383838;border-radius:4px;color:#e0e0e0;font-size:13px;padding:8px 10px;box-sizing:border-box;outline:none;transition:border-color .15s;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#aaa;margin-bottom:5px;letter-spacing:.03em;">Phone</label>
+            <input id="s-phone" type="tel" placeholder="e.g. (510) 555-0100" style="width:100%;background:#171717;border:1px solid #383838;border-radius:4px;color:#e0e0e0;font-size:13px;padding:8px 10px;box-sizing:border-box;outline:none;transition:border-color .15s;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#aaa;margin-bottom:5px;letter-spacing:.03em;">Email</label>
+            <input id="s-email" type="email" placeholder="e.g. orders@company.com" style="width:100%;background:#171717;border:1px solid #383838;border-radius:4px;color:#e0e0e0;font-size:13px;padding:8px 10px;box-sizing:border-box;outline:none;transition:border-color .15s;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#aaa;margin-bottom:5px;letter-spacing:.03em;">Address</label>
+            <textarea id="s-address" rows="3" placeholder="e.g. 1234 Industrial Ave&#10;Oakland, CA 94601" style="width:100%;background:#171717;border:1px solid #383838;border-radius:4px;color:#e0e0e0;font-size:13px;padding:8px 10px;box-sizing:border-box;resize:vertical;outline:none;font-family:inherit;transition:border-color .15s;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#383838'"></textarea>
+          </div>
+        </div>
+      </div>
+      <!-- Drawer footer -->
+      <div style="padding:16px 20px;border-top:1px solid #2d2d2d;flex-shrink:0;">
+        <button id="s-save-btn" onclick="saveSettings()" style="width:100%;padding:10px;background:#4caf50;border:none;border-radius:5px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.03em;transition:background .15s;" onmouseover="this.style.background='#43a047'" onmouseout="this.style.background='#4caf50'">Save Settings</button>
       </div>
     </div>
 
@@ -624,7 +718,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
-let userPresets = {};   // in-memory cache, populated after login
+let userPresets  = {};   // in-memory cache, populated after login
+let userSettings = { company:'', contact:'', phone:'', email:'', address:'' };
 
 // ═══════════════════════════════════════════════════════════
 // CONSTANTS
@@ -854,7 +949,7 @@ function refresh() {
   buildPallet(c);
 
   // Update active panels
-  if (el('p-sch').className.includes('active')) drawSchematic(c);
+  if (el('p-sch').className.includes('active')) { renderSchCutList(c); drawSchematic(c); }
   if (el('p-cut').className.includes('active')) buildCutList(c);
   updateCoSummary(c);
 }
@@ -1031,9 +1126,10 @@ function buildPallet(c) {
   palGroup.add(strGroup, topGroup, botGroup);
 
   const { L, W, tn, tbw, tth, lbw, overhang, bn, bbw, bth, sh, st, sn, entry, nw, nh, species, paintOn, paintCol, blbw, boverhang } = c;
-  const WOOD       = SPECIES_WOOD[species] || SPECIES_WOOD['Mixed HW'];
-  const STRINGER_C = SPECIES_STR[species]  || 0x8a6520;
-  const BLOCK_C    = 0x7a5c1a;
+  const WOOD_TOP = [0xa07838, 0x8e6830];   // matches schematic top board alternating colors
+  const WOOD_BOT = [0xa07838, 0x8e6830];   // matches schematic bottom board alternating colors
+  const STRINGER_C = 0x8a6520;             // matches schematic stringer color
+  const BLOCK_C    = 0x8a6520;
 
   const totalW    = W + 2 * overhang;           // top board span
   const totalWBot = W + 2 * boverhang;          // bottom board span
@@ -1085,14 +1181,14 @@ function buildPallet(c) {
     for (let i = 0; i < tn; i++) {
       const bw = (i === 0 || i === tn - 1) ? leadW : tbw;
       const z  = boardZ(i, tn, leadW, tbw, L);
-      topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD[i % WOOD.length]));
+      topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD_TOP[i % 2]));
     }
     // Bottom deck boards — skip any that land on a 4-way notch zone
     for (let i = 0; i < bn; i++) {
       const bw = (i === 0 || i === bn - 1) ? bleadW : bbw;
       const z  = boardZ(i, bn, bleadW, bbw, L);
       if (entry === '4way' && overlapsNotch(z, bw, L, nw)) continue;
-      botGroup.add(box(totalWBot, bth, bw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
+      botGroup.add(box(totalWBot, bth, bw,  0, yBot, z, WOOD_BOT[i % 2]));
     }
   } else {
     // Block pallet — blocks flush within W and L
@@ -1109,13 +1205,13 @@ function buildPallet(c) {
     for (let i = 0; i < tn; i++) {
       const bw = (i === 0 || i === tn - 1) ? leadW : tbw;
       const z  = boardZ(i, tn, leadW, tbw, L);
-      topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD[i % WOOD.length]));
+      topGroup.add(box(totalW, tth, bw,  0, yTop, z, WOOD_TOP[i % 2]));
     }
     for (let i = 0; i < bn; i++) {
       const bw = (i === 0 || i === bn - 1) ? bleadW : bbw;
       const z  = boardZ(i, bn, bleadW, bbw, L);
       if (entry === '4way' && overlapsNotch(z, bw, L, nw)) continue;
-      botGroup.add(box(totalWBot, bth, bw,  0, yBot, z, WOOD[(i+2) % WOOD.length]));
+      botGroup.add(box(totalWBot, bth, bw,  0, yBot, z, WOOD_BOT[i % 2]));
     }
   }
 
@@ -1291,7 +1387,7 @@ function drawTopView(c) {
       const gap = (intEnd - intStart - ni*tbw) / (ni + 1);
       z = intStart + gap + (i-1)*(tbw + gap) + tbw/2;
     }
-    ctx.fillStyle = i%2 ? '#cc9f58' : '#dcaf69';
+    ctx.fillStyle = i%2 ? '#8e6830' : '#a07838';
     const py = oy + (z - bw/2)*sc;
     ctx.fillRect(ox, py, pw, bw*sc);
     ctx.strokeRect(ox, py, pw, bw*sc);
@@ -1346,7 +1442,7 @@ function drawSideView(c) {
       if (inN1 || inN2) continue;
     }
     const px = ox + (z - bw/2)*sc;
-    ctx.fillStyle = i%2 ? '#c8a050' : '#d4aa60';
+    ctx.fillStyle = i%2 ? '#8e6830' : '#a07838';
     ctx.fillRect(px, oy+ph-bth*sc, bw*sc, bth*sc);
   }
   // Stringer body (long bar)
@@ -1416,7 +1512,7 @@ function drawEndView(c) {
   ctx.fillStyle='#ffffff'; ctx.fillRect(oxBot, oy, pwBot, ph);
 
   // Bottom deck (full width with boverhang)
-  ctx.fillStyle='#c8a050'; ctx.fillRect(oxBot, oy+ph-bth*sc, pwBot, bth*sc);
+  ctx.fillStyle='#a07838'; ctx.fillRect(oxBot, oy+ph-bth*sc, pwBot, bth*sc);
 
   // Stringer X positions — outer faces flush with pallet width edges
   function strX(i) { return sn===1 ? W/2 : st/2 + i*((W-st)/(sn-1)); }
@@ -1436,7 +1532,7 @@ function drawEndView(c) {
   }
 
   // Top deck (full width with overhang)
-  ctx.fillStyle='#cc9f58'; ctx.fillRect(oxTop, oy, pwTop, tth*sc);
+  ctx.fillStyle='#a07838'; ctx.fillRect(oxTop, oy, pwTop, tth*sc);
 
   ctx.fillStyle='#888'; ctx.font='bold 10px Inter,sans-serif'; ctx.textAlign='left';
   ctx.fillText('END VIEW', oxTop, oy-8);
@@ -1495,6 +1591,66 @@ function buildCutList(c) {
     <td style="border:1px solid #eee;padding:6px 10px;text-align:right;color:#2e7d32;">${totWt.toFixed(1)} lbs</td>
     <td style="border:1px solid #eee;padding:6px 10px;text-align:right;color:#2e7d32;">$${totCost.toFixed(2)}</td>
   </tr>`;
+}
+
+function renderSchCutList(c) {
+  const density  = DENSITY[c.species] || 2.9;
+  const costRate = +v('i-cost') || 1.20;
+  const leadW    = c.lbw  > 0 ? c.lbw  : c.tbw;
+  const bleadW   = c.blbw > 0 ? c.blbw : c.bbw;
+  const totalW   = c.W + 2 * c.overhang;
+  const totalWBot = c.W + 2 * c.boverhang;
+
+  const rows = c.type === 'stringer' ? [
+    { name:'Top Deck Board (inner)',    qty:(c.tn-2)*c.qty, L:totalW,    w:c.tbw,  t:c.tth },
+    { name:'Top Deck Board (lead)',     qty:2*c.qty,         L:totalW,    w:leadW,  t:c.tth },
+    { name:'Bottom Deck Board (inner)', qty:(c.bn-2)*c.qty, L:totalWBot, w:c.bbw,  t:c.bth },
+    { name:'Bottom Deck Board (lead)',  qty:2*c.qty,         L:totalWBot, w:bleadW, t:c.bth },
+    { name:'Stringer',                  qty:c.sn*c.qty,      L:c.L,       w:c.sh,   t:c.st  },
+  ].filter(r => r.qty > 0) : [
+    { name:'Top Deck Board (inner)',    qty:(c.tn-2)*c.qty, L:totalW,    w:c.tbw,  t:c.tth },
+    { name:'Top Deck Board (lead)',     qty:2*c.qty,         L:totalW,    w:leadW,  t:c.tth },
+    { name:'Bottom Deck Board (inner)', qty:(c.bn-2)*c.qty, L:totalWBot, w:c.bbw,  t:c.bth },
+    { name:'Bottom Deck Board (lead)',  qty:2*c.qty,         L:totalWBot, w:bleadW, t:c.bth },
+    { name:'Block',                     qty:9*c.qty,          L:c.st*2,    w:c.sh,   t:c.st*2 },
+  ].filter(r => r.qty > 0);
+
+  let totBF = 0, totWt = 0, totCost = 0;
+  el('sch-cut-body').innerHTML = rows.map((r, i) => {
+    const bfEa  = bf(r.L, r.w, r.t);
+    const bfTot = bfEa * r.qty;
+    const wt    = bfTot * density;
+    const cost  = bfTot * costRate;
+    totBF += bfTot; totWt += wt; totCost += cost;
+    return `<tr style="background:${i%2?'#f9f9f9':'#fff'}">
+      <td style="border:1px solid #eee;padding:5px 9px;">${r.name}</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.qty}</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.L}"</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.w}"</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.t}"</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${bfEa.toFixed(3)}</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:500;">${bfTot.toFixed(2)}</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${wt.toFixed(1)}</td>
+      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">$${cost.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  el('sch-cut-foot').innerHTML = `<tr style="background:#f0f7f0;font-weight:600;">
+    <td colspan="6" style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#333;">Totals</td>
+    <td style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#2e7d32;">${totBF.toFixed(2)}</td>
+    <td style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#2e7d32;">${totWt.toFixed(1)} lbs</td>
+    <td style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#2e7d32;">$${totCost.toFixed(2)}</td>
+  </tr>`;
+
+  const qtyEl = el('sch-cut-qty-label');
+  if (qtyEl) qtyEl.textContent = c.qty === 1 ? '1 pallet' : `${c.qty} pallets`;
+}
+
+function printPanel(panel) {
+  document.body.dataset.printTarget = panel;
+  if (panel === 'sch') renderSchCutList(cfg());
+  window.print();
+  delete document.body.dataset.printTarget;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1565,7 +1721,8 @@ function showTab(name) {
     el('tb-'+t).className = 'tab-btn' + (t===name?' active':'');
   });
   const c = cfg();
-  if (name === 'sch')   setTimeout(() => drawSchematic(c), 30);
+  el('sidebar-print-opts').style.display = name === 'sch' ? 'block' : 'none';
+  if (name === 'sch')   { renderSchCutList(c); setTimeout(() => drawSchematic(c), 30); }
   if (name === 'cut')   buildCutList(c);
   if (name === 'co')    updateCoSummary(c);
   if (name === 'saved') renderSavedTab();
@@ -1899,11 +2056,14 @@ function initAuth() {
       el('auth-gate').classList.add('hidden');
       updateAuthButton();
       await loadUserPresets();
+      await loadUserSettings();
       renderSavedTab();
       renderUserPresetsDropdown();
     } else {
       currentUser = null;
-      userPresets = {};
+      userPresets  = {};
+      userSettings = { company:'', contact:'', phone:'', email:'', address:'' };
+      renderSchematicCompanyBlock();
       el('auth-gate').classList.remove('hidden');
       updateAuthButton();
       renderSavedTab();
@@ -1912,7 +2072,7 @@ function initAuth() {
   });
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { const menu = el('user-menu'); if (menu) menu.remove(); }
+    if (e.key === 'Escape') { const menu = el('user-menu'); if (menu) menu.remove(); closeSettingsDrawer(); }
   });
 }
 
@@ -1973,6 +2133,75 @@ async function logOut() {
   } catch (err) { console.error('Sign out failed:', err); }
 }
 
+// ── SETTINGS DRAWER ────────────────────────────────────────────
+function openSettingsDrawer() {
+  const menu = el('user-menu'); if (menu) menu.remove();
+  const s = userSettings;
+  el('s-company').value = s.company || '';
+  el('s-contact').value = s.contact || '';
+  el('s-phone').value   = s.phone   || '';
+  el('s-email').value   = s.email   || '';
+  el('s-address').value = s.address || '';
+  el('settings-backdrop').style.display = 'block';
+  el('settings-drawer').style.transform = 'translateX(0)';
+}
+
+function closeSettingsDrawer() {
+  el('settings-backdrop').style.display = 'none';
+  el('settings-drawer').style.transform = 'translateX(100%)';
+}
+
+function renderSchematicCompanyBlock() {
+  const s = userSettings;
+  const hasData = s.company || s.contact || s.phone || s.email || s.address;
+  const block = el('sch-company-block');
+  if (!block) return;
+  if (!hasData) { block.style.display = 'none'; return; }
+  block.style.display = 'block';
+  el('sch-co-name').textContent    = s.company || '';
+  el('sch-co-contact').textContent = s.contact || '';
+  el('sch-co-phone').textContent   = s.phone   || '';
+  el('sch-co-email').textContent   = s.email   || '';
+  el('sch-co-address').textContent = s.address || '';
+}
+
+async function loadUserSettings() {
+  if (!auth.currentUser) return;
+  try {
+    const doc = await db.collection('users').doc(auth.currentUser.uid)
+      .collection('settings').doc('company').get();
+    if (doc.exists) userSettings = doc.data();
+  } catch(err) { console.error('load settings:', err); }
+  renderSchematicCompanyBlock();
+}
+
+async function saveSettings() {
+  if (!auth.currentUser) return;
+  const data = {
+    company: el('s-company').value.trim(),
+    contact: el('s-contact').value.trim(),
+    phone:   el('s-phone').value.trim(),
+    email:   el('s-email').value.trim(),
+    address: el('s-address').value.trim(),
+  };
+  const btn = el('s-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await db.collection('users').doc(auth.currentUser.uid)
+      .collection('settings').doc('company').set(data);
+    userSettings = data;
+    renderSchematicCompanyBlock();
+    btn.textContent = 'Saved ✓';
+    btn.style.background = '#388e3c';
+    setTimeout(() => { btn.textContent = 'Save Settings'; btn.style.background = '#4caf50'; btn.disabled = false; }, 1800);
+  } catch(err) {
+    console.error('save settings:', err);
+    btn.textContent = 'Save Settings'; btn.disabled = false;
+    alert('Could not save settings. Check your connection and try again.');
+  }
+}
+// ────────────────────────────────────────────────────────────────
+
 function updateAuthButton() {
   const btn = el('auth-open-btn');
   if (currentUser) {
@@ -2002,6 +2231,7 @@ function showUserMenu() {
       <div style="font-size:12px;color:#ccc;font-weight:600;">${escH(name)}</div>
       <div style="font-size:10px;color:#666;margin-top:2px;">${escH(currentUser.email)}</div>
     </div>
+    <button onclick="el('user-menu').remove();openSettingsDrawer()" style="width:100%;padding:9px 14px;text-align:left;background:none;border:none;color:#ccc;font-size:12px;cursor:pointer;border-bottom:1px solid #2d2d2d;transition:background .12s;" onmouseover="this.style.background='#252525'" onmouseout="this.style.background='none'">⚙ Settings</button>
     <button onclick="logOut()" style="width:100%;padding:9px 14px;text-align:left;background:none;border:none;color:#ef5350;font-size:12px;cursor:pointer;transition:background .12s;" onmouseover="this.style.background='#2a2020'" onmouseout="this.style.background='none'">Sign out</button>
   `;
   document.body.appendChild(menu);
