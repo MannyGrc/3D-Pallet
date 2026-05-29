@@ -60,7 +60,28 @@
     /* Sidebar resize handle */
     #sidebar-handle{position:absolute;top:0;right:0;width:5px;height:100%;cursor:col-resize;z-index:10;background:transparent;transition:background .15s;}
     #sidebar-handle:hover,#sidebar-handle.dragging{background:rgba(76,175,80,0.35);}
-    #sidebar{position:relative;}
+    #sidebar{position:relative;transition:width 0.25s ease;}
+    #sidebar.collapsed{width:0!important;overflow:hidden;min-width:0;}
+    #sidebar.collapsed #sidebar-handle{display:none;}
+    #sidebar-toggle-btn{cursor:pointer;user-select:none;}
+    @keyframes palletBounce{
+      0%  {transform:scale(1) rotate(0deg);}
+      25% {transform:scale(0.72) rotate(-8deg);}
+      65% {transform:scale(1.18) rotate(4deg);}
+      100%{transform:scale(1) rotate(0deg);}
+    }
+    @keyframes barFlash{
+      0%,100%{fill:#4caf50;}
+      45%    {fill:#a5d6a7;}
+    }
+    #sidebar-toggle-btn.animating svg{
+      animation:palletBounce 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      transform-origin:center;
+    }
+    #sidebar-toggle-btn.animating svg rect:nth-child(1){animation:barFlash 0.4s ease forwards 0.00s;}
+    #sidebar-toggle-btn.animating svg rect:nth-child(2){animation:barFlash 0.4s ease forwards 0.07s;}
+    #sidebar-toggle-btn.animating svg rect:nth-child(3){animation:barFlash 0.4s ease forwards 0.14s;}
+    #sidebar-toggle-btn.animating svg rect:nth-child(4){animation:barFlash 0.4s ease forwards 0.21s;}
     /* Custom number spinner */
     .num-wrap{display:inline-flex;align-items:center;gap:2px;}
     .num-wrap .di{-moz-appearance:textfield;width:52px;}
@@ -91,7 +112,7 @@
 
 <!-- ── HEADER ──────────────────────────────── -->
 <header style="height:44px;background:#1a1a1a;" class="flex items-center px-4 gap-5 z-20 relative">
-  <div class="flex items-center gap-2 mr-3">
+  <div id="sidebar-toggle-btn" class="flex items-center gap-2 mr-3">
     <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
       <rect y="0"  width="26" height="3.5" rx="1" fill="#4caf50"/>
       <rect y="5"  width="26" height="3.5" rx="1" fill="#4caf50"/>
@@ -103,8 +124,9 @@
       <div style="font-size:9px;color:#aaa;letter-spacing:.12em;text-transform:uppercase;">Bench</div>
     </div>
   </div>
-  <nav class="flex h-full items-end">
-    <div style="border-bottom:2px solid #4caf50;padding:0 4px 8px;font-size:13px;color:#fff;font-weight:500;cursor:pointer;">Pallet</div>
+  <nav class="flex h-full items-end" style="gap:20px;">
+    <div id="hn-pallet" onclick="showTab('3d')" style="border-bottom:2px solid #4caf50;padding:0 4px 8px;font-size:13px;color:#fff;font-weight:500;cursor:pointer;transition:color .15s,border-color .15s;">Pallet</div>
+    <div id="hn-quotes" onclick="showTab('quotes')" style="border-bottom:2px solid transparent;padding:0 4px 8px;font-size:13px;color:#777;font-weight:500;cursor:pointer;transition:color .15s,border-color .15s;">Quotes</div>
   </nav>
   <div class="ml-auto flex items-center gap-2">
     <button id="share-btn" onclick="encodeConfigToURL()" style="font-size:11px;color:#aaa;border:1px solid #383838;border-radius:4px;padding:4px 10px;background:transparent;cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">Copy Link</button>
@@ -523,7 +545,8 @@
     <button class="tab-btn" id="tb-cut"   onclick="showTab('cut')">Cut List</button>
     <button class="tab-btn active" id="tb-3d" onclick="showTab('3d')">3D View</button>
     <button class="tab-btn" id="tb-co"    onclick="showTab('co')">Checkout</button>
-    <button class="tab-btn" id="tb-saved" onclick="showTab('saved')">Saved</button>
+    <button class="tab-btn" id="tb-saved"   onclick="showTab('saved')">Saved</button>
+    <button class="tab-btn" id="tb-quotes" onclick="showTab('quotes')">Quotes</button>
   </div>
 
   <!-- Panels -->
@@ -543,7 +566,7 @@
           <option value="#ffffff">White</option>
         </select>
       </div>
-      <div id="kbd-legend">1 Schematic · 2 Cut List · 3 3D View · 4 Checkout · 5 Saved<br>R Reset Cam · W Wireframe · E Explode</div>
+      <div id="kbd-legend">1 Schematic · 2 Cut List · 3 3D View · 4 Checkout · 5 Saved · 6 Quotes<br>R Reset Cam · W Wireframe · E Explode</div>
       <canvas id="cv3d"></canvas>
     </div>
 
@@ -583,10 +606,12 @@
         </table>
       </div>
       <!-- Diagrams -->
-      <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
         <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Top View</p><canvas id="cv-top" width="480" height="380" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
-        <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Side View</p><canvas id="cv-side" width="380" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
-        <div><p style="font-size:11px;color:#888;margin:0 0 5px;">End View</p><canvas id="cv-end" width="240" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+        <div style="display:flex;flex-direction:column;gap:24px;">
+          <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Side View</p><canvas id="cv-side" width="380" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+          <div><p style="font-size:11px;color:#888;margin:0 0 5px;">End View</p><canvas id="cv-end" width="240" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -697,6 +722,68 @@
       </div>
       <div id="saved-cards"></div>
       <p id="no-saves-msg" style="font-size:13px;color:#aaa;text-align:center;margin-top:40px;">No saved configurations yet. Configure a pallet and click Save.</p>
+    </div>
+
+    <!-- Quotes -->
+    <div id="p-quotes" class="panel" style="background:#f5f6f5;overflow:auto;padding:32px 40px;">
+      <div style="max-width:760px;">
+        <div style="margin-bottom:26px;">
+          <h2 style="font-size:22px;font-weight:800;color:#1a1a1a;letter-spacing:-0.02em;font-family:'Barlow Condensed',sans-serif;margin:0 0 6px;">Request Manufacturer Quotes</h2>
+          <p style="font-size:13px;color:#666;margin:0;line-height:1.6;">Your configured pallet spec is attached automatically. Fill in your details and send to one or more pallet manufacturers to receive competitive quotes.</p>
+        </div>
+
+        <!-- Auto-populated spec card -->
+        <div style="background:#fff;border:1px solid #e0e0e0;border-left:3px solid #4caf50;border-radius:6px;padding:16px 20px;margin-bottom:28px;">
+          <div style="font-size:10px;font-weight:700;color:#4caf50;letter-spacing:.10em;text-transform:uppercase;margin-bottom:12px;">Pallet Specification</div>
+          <div id="qt-spec-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px 24px;font-size:12px;"></div>
+        </div>
+
+        <form onsubmit="submitQuoteRequest(event)" style="display:flex;flex-direction:column;gap:22px;">
+
+          <!-- Your Info -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.10em;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid #e5e5e5;padding-bottom:6px;">Your Information</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">First Name *</label><input id="qt-fname" type="text" required placeholder="Jane" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+              <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Last Name *</label><input id="qt-lname" type="text" required placeholder="Smith" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+              <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Company</label><input id="qt-company" type="text" placeholder="Acme Corp" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+              <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Email *</label><input id="qt-email" type="email" required placeholder="jane@company.com" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+              <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Phone</label><input id="qt-phone" type="tel" placeholder="(555) 000-0000" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+            </div>
+          </div>
+
+          <!-- Order Details -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.10em;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid #e5e5e5;padding-bottom:6px;">Order Details</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Quantity *</label><input id="qt-qty" type="number" min="1" required placeholder="500" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+              <div><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Needed By</label><input id="qt-date" type="date" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+              <div style="grid-column:1/-1"><label style="display:block;font-size:11px;font-weight:500;color:#666;margin-bottom:3px;">Delivery Address</label><input id="qt-addr" type="text" placeholder="123 Main St, City, State 00000" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></div>
+            </div>
+          </div>
+
+          <!-- Manufacturer Emails -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.10em;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid #e5e5e5;padding-bottom:6px;">Send To (Manufacturer Emails)</div>
+            <div id="qt-mfr-list" style="display:flex;flex-direction:column;gap:8px;">
+              <input class="qt-mfr-input" type="email" placeholder="manufacturer@example.com" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'">
+            </div>
+            <button type="button" onclick="addMfrField()" id="qt-add-mfr" style="margin-top:8px;background:none;border:1px dashed #ccc;border-radius:4px;padding:6px 14px;font-size:12px;color:#888;cursor:pointer;transition:border-color .12s,color .12s;" onmouseover="this.style.borderColor='#4caf50';this.style.color='#4caf50'" onmouseout="this.style.borderColor='#ccc';this.style.color='#888'">+ Add Manufacturer</button>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.10em;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid #e5e5e5;padding-bottom:6px;">Special Requirements</div>
+            <textarea id="qt-notes" rows="3" placeholder="Certifications needed, stackability, treatment requirements, branding, etc." style="width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;resize:vertical;box-sizing:border-box;" onfocus="this.style.borderColor='#4caf50'" onblur="this.style.borderColor='#ddd'"></textarea>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" style="background:#4caf50;color:#fff;border:none;border-radius:4px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:background .12s,transform .1s;" onmouseover="this.style.background='#43a047'" onmouseout="this.style.background='#4caf50'" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+            Send Quote Request via Email
+          </button>
+
+        </form>
+      </div>
     </div>
 
   </div><!-- /panels -->
@@ -1716,22 +1803,114 @@ function updateCoSummary(c) {
 // TAB SWITCHING
 // ═══════════════════════════════════════════════════════════
 function showTab(name) {
-  ['sch','cut','3d','co','saved'].forEach(t => {
+  ['sch','cut','3d','co','saved','quotes'].forEach(t => {
     el('p-' +t).className = 'panel' + (t===name?' active':'');
     el('tb-'+t).className = 'tab-btn' + (t===name?' active':'');
   });
+  // Sync header nav active state
+  const onQuotes = name === 'quotes';
+  const hnp = el('hn-pallet'), hnq = el('hn-quotes');
+  if (hnp) { hnp.style.borderBottomColor = onQuotes ? 'transparent' : '#4caf50'; hnp.style.color = onQuotes ? '#777' : '#fff'; }
+  if (hnq) { hnq.style.borderBottomColor = onQuotes ? '#4caf50' : 'transparent'; hnq.style.color = onQuotes ? '#fff' : '#777'; }
   const c = cfg();
   el('sidebar-print-opts').style.display = name === 'sch' ? 'block' : 'none';
-  if (name === 'sch')   { renderSchCutList(c); setTimeout(() => drawSchematic(c), 30); }
-  if (name === 'cut')   buildCutList(c);
-  if (name === 'co')    updateCoSummary(c);
-  if (name === 'saved') renderSavedTab();
-  if (name === '3d')    setTimeout(onResize, 30);
+  if (name === 'sch')    { renderSchCutList(c); setTimeout(() => drawSchematic(c), 30); }
+  if (name === 'cut')    buildCutList(c);
+  if (name === 'co')     updateCoSummary(c);
+  if (name === 'quotes') updateQuotesPanel(c);
+  if (name === 'saved')  renderSavedTab();
+  if (name === '3d')     setTimeout(onResize, 30);
 }
 
 function submitOrder(e) {
   e.preventDefault();
   alert('Thank you! Your quote request has been submitted.\nA 360 Palette Solutions representative will contact you within 1 business day.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUOTES TAB
+// ═══════════════════════════════════════════════════════════
+function updateQuotesPanel(c) {
+  const body = el('qt-spec-body');
+  if (!body) return;
+  const totalH = (c.bth + c.sh + c.tth).toFixed(2);
+  const totalW = c.W + 2 * c.overhang;
+  const specItems = [
+    ['Type',        c.type === 'stringer' ? 'Stringer' : 'Block'],
+    ['Dimensions',  `${c.L}" × ${totalW}" × ${totalH}"`],
+    ['Est. Weight', `${calcWeight(c)} lbs`],
+    ['Top Deck',    `${c.tn} boards @ ${c.tbw}" × ${c.tth}"`],
+    ['Bottom Deck', `${c.bn} boards @ ${c.bbw}" × ${c.bth}"`],
+    ['Load Cap.',   `${calcLoad(c).toLocaleString()} lbs`],
+    ['Wood',        c.species],
+    [c.type === 'stringer' ? 'Stringers' : 'Blocks', String(c.sn)],
+  ];
+  if (c.ht)  specItems.push(['Heat Treat', 'ISPM-15']);
+  if (c.mb)  specItems.push(['Methyl Bromide', 'Yes']);
+  body.innerHTML = specItems.map(([label, val]) =>
+    `<div><span style="color:#999;font-size:10px;display:block;margin-bottom:2px;">${label}</span><strong style="color:#222;font-size:12px;">${val}</strong></div>`
+  ).join('');
+  const qtyEl = el('qt-qty');
+  if (qtyEl && !qtyEl.value) qtyEl.value = c.qty;
+}
+
+function addMfrField() {
+  const list = el('qt-mfr-list');
+  const existing = list.querySelectorAll('.qt-mfr-input').length;
+  if (existing >= 5) { el('qt-add-mfr').textContent = 'Max 5 manufacturers'; return; }
+  const inp = document.createElement('input');
+  inp.type = 'email'; inp.className = 'qt-mfr-input';
+  inp.placeholder = 'manufacturer@example.com';
+  inp.style.cssText = 'width:100%;border:1px solid #ddd;border-radius:4px;padding:7px 10px;font-size:13px;box-sizing:border-box;';
+  inp.addEventListener('focus', () => inp.style.borderColor = '#4caf50');
+  inp.addEventListener('blur',  () => inp.style.borderColor = '#ddd');
+  list.appendChild(inp);
+  if (existing + 1 >= 5) el('qt-add-mfr').textContent = 'Max 5 manufacturers';
+}
+
+function submitQuoteRequest(e) {
+  e.preventDefault();
+  const c = cfg();
+  const totalH = (c.bth + c.sh + c.tth).toFixed(2);
+  const totalW = c.W + 2 * c.overhang;
+  const fname   = el('qt-fname').value.trim();
+  const lname   = el('qt-lname').value.trim();
+  const company = el('qt-company').value.trim();
+  const email   = el('qt-email').value.trim();
+  const phone   = el('qt-phone').value.trim();
+  const qty     = el('qt-qty').value.trim();
+  const date    = el('qt-date').value;
+  const addr    = el('qt-addr').value.trim();
+  const notes   = el('qt-notes').value.trim();
+  const mfrEmails = [...document.querySelectorAll('.qt-mfr-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  const subject = `Pallet Quote Request – ${c.L}"×${totalW}"×${totalH}" ${c.type === 'stringer' ? 'Stringer' : 'Block'} – Qty ${qty}`;
+  const body = [
+    'PALLET QUOTE REQUEST',
+    '',
+    `Contact: ${fname} ${lname}${company ? ' / ' + company : ''}`,
+    `Email: ${email}`,
+    `Phone: ${phone || 'N/A'}`,
+    `Delivery Address: ${addr || 'TBD'}`,
+    `Needed By: ${date || 'Flexible'}`,
+    '',
+    'PALLET SPECIFICATION',
+    `Type: ${c.type === 'stringer' ? 'Stringer' : 'Block'}`,
+    `Dimensions: ${c.L}" L × ${totalW}" W × ${totalH}" H`,
+    `Top Deck Boards: ${c.tn} boards @ ${c.tbw}" wide × ${c.tth}" thick`,
+    `Bottom Deck Boards: ${c.bn} boards @ ${c.bbw}" wide × ${c.bth}" thick`,
+    `${c.type === 'stringer' ? 'Stringers' : 'Blocks'}: ${c.sn}`,
+    `Wood Species: ${c.species}`,
+    `Estimated Weight: ${calcWeight(c)} lbs`,
+    `Load Capacity: ${calcLoad(c).toLocaleString()} lbs`,
+    c.ht ? 'Heat Treatment: Yes (ISPM-15)' : '',
+    c.mb ? 'Methyl Bromide: Yes' : '',
+    '',
+    `Quantity Requested: ${qty}`,
+    notes ? `\nSpecial Requirements:\n${notes}` : '',
+  ].filter(l => l !== null).join('\n').trim();
+  const to = mfrEmails.join(',');
+  window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1960,7 +2139,8 @@ window.addEventListener('keydown', e => {
     case '2': showTab('cut');   break;
     case '3': showTab('3d');    break;
     case '4': showTab('co');    break;
-    case '5': showTab('saved'); break;
+    case '5': showTab('saved');  break;
+    case '6': showTab('quotes'); break;
     case 'r': case 'R': resetCam();       break;
     case 'w': case 'W': toggleWire();     break;
     case 'e': case 'E': toggleExploded(); break;
@@ -1988,6 +2168,7 @@ function initSidebarResize() {
 
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
+    if (sidebar.classList.contains('collapsed')) return;
     const w = Math.min(MAX_W, Math.max(MIN_W, startW + (e.clientX - startX)));
     sidebar.style.width = w + 'px';
     onResize();
@@ -2034,8 +2215,28 @@ function wrapNumberInputs() {
   });
 }
 
+function initSidebarToggle() {
+  const btn     = el('sidebar-toggle-btn');
+  const sidebar = el('sidebar');
+  const svg = btn.querySelector('svg');
+  btn.addEventListener('click', () => {
+    btn.classList.remove('animating');
+    void btn.offsetWidth; // restart animation if clicked rapidly
+    btn.classList.add('animating');
+    svg.addEventListener('animationend', () => btn.classList.remove('animating'), { once: true });
+    const isCollapsed = sidebar.classList.toggle('collapsed');
+    if (!isCollapsed) {
+      sidebar.style.width = sidebar.dataset.lastWidth || '228px';
+    } else {
+      sidebar.dataset.lastWidth = sidebar.style.width || '228px';
+    }
+    onResize();
+  });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initSidebarResize();
+  initSidebarToggle();
   wrapNumberInputs();
   showTab('3d');
   initThree();
