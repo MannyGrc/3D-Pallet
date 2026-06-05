@@ -99,12 +99,25 @@
     @keyframes spin{to{transform:rotate(360deg);}}
     .spinner-ring{width:36px;height:36px;border:3px solid #2d2d2d;border-top-color:#4caf50;border-radius:50%;animation:spin 0.75s linear infinite;}
     @media print {
+      @page { size: letter landscape; margin: 0.4in; }
       header, #sidebar, #sidebar-handle, #settings-drawer, #settings-backdrop,
       #auth-gate, #auth-spinner, .tab-bar, #kbd-legend { display: none !important; }
       .panel { display: none !important; }
       body[data-print-target="sch"] #p-sch,
       body[data-print-target="cut"] #p-cut { display: block !important; overflow: visible !important; }
       #main { margin-left: 0 !important; width: 100% !important; }
+      /* Schematic: compact everything onto one landscape page */
+      body[data-print-target="sch"] #p-sch { padding: 6px !important; }
+      body[data-print-target="sch"] #p-sch > h2 { display: none !important; }
+      body[data-print-target="sch"] #sch-company-block { padding: 8px 12px !important; margin-bottom: 10px !important; }
+      body[data-print-target="sch"] #sch-cut-wrap { margin-bottom: 10px !important; }
+      body[data-print-target="sch"] #sch-cut-wrap table { font-size: 9px !important; }
+      body[data-print-target="sch"] #sch-cut-wrap td,
+      body[data-print-target="sch"] #sch-cut-wrap th { padding: 2px 5px !important; }
+      body[data-print-target="sch"] #sch-diagrams { gap: 16px !important; flex-wrap: nowrap !important; }
+      body[data-print-target="sch"] #sch-diagrams > div { gap: 14px !important; }
+      body[data-print-target="sch"] #sch-diagrams p { margin: 0 0 3px !important; font-size: 9px !important; }
+      body[data-print-target="sch"] #sch-diagrams canvas { display: block; }
     }
   </style>
 </head>
@@ -540,7 +553,7 @@
   <div id="warn-bar"></div>
 
   <!-- Tab bar -->
-  <div style="background:#fff;border-bottom:1px solid #e5e5e5;display:flex;">
+  <div class="tab-bar" style="background:#fff;border-bottom:1px solid #e5e5e5;display:flex;">
     <button class="tab-btn" id="tb-sch"   onclick="showTab('sch')">Schematic</button>
     <button class="tab-btn" id="tb-cut"   onclick="showTab('cut')">Cut List</button>
     <button class="tab-btn active" id="tb-3d" onclick="showTab('3d')">3D View</button>
@@ -595,10 +608,6 @@
               <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Length</th>
               <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Width</th>
               <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Thick</th>
-              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Bd Ft/ea</th>
-              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Total Bd Ft</th>
-              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Weight (lbs)</th>
-              <th style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:600;color:#555;">Est. Cost</th>
             </tr>
           </thead>
           <tbody id="sch-cut-body"></tbody>
@@ -606,8 +615,11 @@
         </table>
       </div>
       <!-- Diagrams -->
-      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
-        <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Top View</p><canvas id="cv-top" width="480" height="380" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+      <div id="sch-diagrams" style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:24px;">
+          <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Top View</p><canvas id="cv-top" width="480" height="380" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+          <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Bottom View</p><canvas id="cv-bot" width="480" height="380" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
+        </div>
         <div style="display:flex;flex-direction:column;gap:24px;">
           <div><p style="font-size:11px;color:#888;margin:0 0 5px;">Side View</p><canvas id="cv-side" width="380" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
           <div><p style="font-size:11px;color:#888;margin:0 0 5px;">End View</p><canvas id="cv-end" width="240" height="200" style="border:1px solid #e5e5e5;border-radius:4px;"></canvas></div>
@@ -1422,6 +1434,7 @@ function buildPallet(c) {
 // ═══════════════════════════════════════════════════════════
 function drawSchematic(c) {
   drawTopView(c);
+  drawBottomView(c);
   drawSideView(c);
   drawEndView(c);
 }
@@ -1490,6 +1503,91 @@ function drawTopView(c) {
   ctx.beginPath(); ctx.moveTo(dimX, oy); ctx.lineTo(dimX, oy+ph); ctx.stroke();
   ctx.fillStyle = '#888'; ctx.font = 'bold 10px Inter,sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('TOP VIEW', ox, oy - 10);
+}
+
+function drawBottomView(c) {
+  const cv  = el('cv-bot');
+  const ctx = cv.getContext('2d');
+  const { L, W, bn, bbw, blbw, sn, st, boverhang } = c;
+  const totalWBot = W + 2 * boverhang;
+  const bleadW = blbw > 0 ? blbw : bbw;
+  const mg = 36, sw = cv.width - mg*2, cvh = cv.height - mg*2;
+  const scX = sw / totalWBot, scZ = cvh / L, sc = Math.min(scX, scZ);
+  const pw = totalWBot * sc, ph = L * sc;
+  const ox = mg + (sw-pw)/2, oy = mg + (cvh-ph)/2;
+
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.rect(ox, oy, pw, ph); ctx.fill(); ctx.stroke();
+
+  if (c.type === 'stringer') {
+    // Stringers — same X positions as top view but using boverhang offset
+    ctx.fillStyle = '#7a5c20';
+    for (let i = 0; i < sn; i++) {
+      const x  = sn === 1 ? W/2 : st/2 + i * ((W - st) / (sn - 1));
+      const px = ox + boverhang*sc + (x - st/2)*sc;
+      ctx.fillRect(px, oy, st*sc, ph);
+      if (c.entry === '4way' && c.nw > 0 && c.nw < L / 2) {
+        [L/4, 3*L/4].forEach(pos => {
+          const nPy = oy + (pos - c.nw/2) * sc;
+          const nPh = c.nw * sc;
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(px, nPy, st*sc, nPh);
+          ctx.strokeStyle = '#aaa'; ctx.lineWidth = 0.5;
+          ctx.strokeRect(px, nPy, st*sc, nPh);
+        });
+        ctx.fillStyle = '#7a5c20';
+      }
+    }
+  } else {
+    // Block pallet — 3×3 grid of blocks (square footprint st*2 × st*2)
+    const bSize = c.st * 2;
+    const bxPos = [0, W/2, W];
+    const bzPos = [0, L/2, L];
+    ctx.fillStyle = '#7a5c20';
+    for (const bz of bzPos) {
+      for (const bx of bxPos) {
+        const px = ox + boverhang*sc + (bx - bSize/2)*sc;
+        const py = oy + (bz - bSize/2)*sc;
+        ctx.fillRect(px, py, bSize*sc, bSize*sc);
+        ctx.strokeStyle = '#a07028'; ctx.lineWidth = 0.5;
+        ctx.strokeRect(px, py, bSize*sc, bSize*sc);
+      }
+    }
+  }
+
+  // Bottom deck boards
+  ctx.strokeStyle = '#a07028'; ctx.lineWidth = 0.5;
+  for (let i = 0; i < bn; i++) {
+    const bw = (i === 0 || i === bn-1) ? bleadW : bbw;
+    let z;
+    if (bn === 1) { z = L/2; }
+    else if (i === 0) { z = bleadW/2; }
+    else if (i === bn-1) { z = L - bleadW/2; }
+    else {
+      const ni = bn - 2, intStart = bleadW, intEnd = L - bleadW;
+      const gap = (intEnd - intStart - ni*bbw) / (ni + 1);
+      z = intStart + gap + (i-1)*(bbw + gap) + bbw/2;
+    }
+    ctx.fillStyle = i%2 ? '#8e6830' : '#a07838';
+    const py = oy + (z - bw/2)*sc;
+    ctx.fillRect(ox, py, pw, bw*sc);
+    ctx.strokeRect(ox, py, pw, bw*sc);
+  }
+
+  // Dimensions
+  ctx.fillStyle = '#444'; ctx.strokeStyle = '#999'; ctx.lineWidth = 0.8;
+  ctx.font = '11px Inter,sans-serif'; ctx.textAlign = 'center';
+  const dimY = oy + ph + 18;
+  ctx.beginPath(); ctx.moveTo(ox, dimY); ctx.lineTo(ox+pw, dimY); ctx.stroke();
+  ctx.fillText(`${totalWBot}"`, ox + pw/2, dimY + 12);
+  const dimX = ox + pw + 18;
+  ctx.save(); ctx.translate(dimX+10, oy+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText(`${L}"`, 0, 0); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(dimX, oy); ctx.lineTo(dimX, oy+ph); ctx.stroke();
+  ctx.fillStyle = '#888'; ctx.font = 'bold 10px Inter,sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('BOTTOM VIEW', ox, oy - 10);
 }
 
 function drawSideView(c) {
@@ -1681,8 +1779,6 @@ function buildCutList(c) {
 }
 
 function renderSchCutList(c) {
-  const density  = DENSITY[c.species] || 2.9;
-  const costRate = +v('i-cost') || 1.20;
   const leadW    = c.lbw  > 0 ? c.lbw  : c.tbw;
   const bleadW   = c.blbw > 0 ? c.blbw : c.bbw;
   const totalW   = c.W + 2 * c.overhang;
@@ -1702,32 +1798,17 @@ function renderSchCutList(c) {
     { name:'Block',                     qty:9*c.qty,          L:c.st*2,    w:c.sh,   t:c.st*2 },
   ].filter(r => r.qty > 0);
 
-  let totBF = 0, totWt = 0, totCost = 0;
   el('sch-cut-body').innerHTML = rows.map((r, i) => {
-    const bfEa  = bf(r.L, r.w, r.t);
-    const bfTot = bfEa * r.qty;
-    const wt    = bfTot * density;
-    const cost  = bfTot * costRate;
-    totBF += bfTot; totWt += wt; totCost += cost;
     return `<tr style="background:${i%2?'#f9f9f9':'#fff'}">
       <td style="border:1px solid #eee;padding:5px 9px;">${r.name}</td>
       <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.qty}</td>
       <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.L}"</td>
       <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.w}"</td>
       <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${r.t}"</td>
-      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${bfEa.toFixed(3)}</td>
-      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;font-weight:500;">${bfTot.toFixed(2)}</td>
-      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">${wt.toFixed(1)}</td>
-      <td style="border:1px solid #eee;padding:5px 9px;text-align:right;">$${cost.toFixed(2)}</td>
     </tr>`;
   }).join('');
 
-  el('sch-cut-foot').innerHTML = `<tr style="background:#f0f7f0;font-weight:600;">
-    <td colspan="6" style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#333;">Totals</td>
-    <td style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#2e7d32;">${totBF.toFixed(2)}</td>
-    <td style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#2e7d32;">${totWt.toFixed(1)} lbs</td>
-    <td style="border:1px solid #eee;padding:5px 9px;text-align:right;color:#2e7d32;">$${totCost.toFixed(2)}</td>
-  </tr>`;
+  el('sch-cut-foot').innerHTML = '';
 
   const qtyEl = el('sch-cut-qty-label');
   if (qtyEl) qtyEl.textContent = c.qty === 1 ? '1 pallet' : `${c.qty} pallets`;
@@ -1735,9 +1816,33 @@ function renderSchCutList(c) {
 
 function printPanel(panel) {
   document.body.dataset.printTarget = panel;
-  if (panel === 'sch') renderSchCutList(cfg());
-  window.print();
-  delete document.body.dataset.printTarget;
+  if (panel === 'sch') {
+    const c = cfg();
+    renderSchCutList(c);
+    // Shrink canvases to fit one landscape page, then restore after print
+    const PRINT_SIZES = {
+      'cv-top':  [290, 230], 'cv-bot':  [290, 230],
+      'cv-side': [270, 142], 'cv-end':  [180, 150]
+    };
+    const orig = {};
+    Object.entries(PRINT_SIZES).forEach(([id, [w, h]]) => {
+      const cv = el(id);
+      orig[id] = [cv.width, cv.height];
+      cv.width = w; cv.height = h;
+    });
+    drawSchematic(c);
+    window.addEventListener('afterprint', () => {
+      Object.entries(orig).forEach(([id, [w, h]]) => {
+        const cv = el(id); cv.width = w; cv.height = h;
+      });
+      drawSchematic(cfg());
+      delete document.body.dataset.printTarget;
+    }, { once: true });
+    window.print();
+  } else {
+    window.print();
+    delete document.body.dataset.printTarget;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
