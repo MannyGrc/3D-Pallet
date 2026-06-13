@@ -98,16 +98,20 @@
     #auth-spinner.hidden{display:none;}
     @keyframes spin{to{transform:rotate(360deg);}}
     .spinner-ring{width:36px;height:36px;border:3px solid #2d2d2d;border-top-color:#4caf50;border-radius:50%;animation:spin 0.75s linear infinite;}
+    #sch-cut-wrap table th, #sch-cut-wrap table td { padding-left: 16px !important; padding-right: 16px !important; }
+    #p-cut table th, #p-cut table td { padding-left: 16px !important; padding-right: 16px !important; }
     @media print {
-      @page { size: letter landscape; margin: 0.4in; }
+      @page { size: letter landscape; margin: 0; }
       header, #sidebar, #sidebar-handle, #settings-drawer, #settings-backdrop,
       #auth-gate, #auth-spinner, .tab-bar, #kbd-legend { display: none !important; }
+      #s-load-wrap { display: none !important; }
       .panel { display: none !important; }
       body[data-print-target="sch"] #p-sch,
       body[data-print-target="cut"] #p-cut { display: block !important; overflow: visible !important; }
       #main { margin-left: 0 !important; width: 100% !important; }
       /* Schematic: compact everything onto one landscape page */
-      body[data-print-target="sch"] #p-sch { padding: 6px !important; }
+      body[data-print-target="sch"] #p-sch { padding: 0.35in 0.4in !important; }
+      body[data-print-target="cut"] #p-cut { padding: 0.35in 0.4in !important; }
       body[data-print-target="sch"] #p-sch > h2 { display: none !important; }
       body[data-print-target="sch"] #sch-company-block { padding: 8px 12px !important; margin-bottom: 10px !important; }
       body[data-print-target="sch"] #sch-cut-wrap { margin-bottom: 10px !important; }
@@ -545,7 +549,7 @@
     <div style="font-size:12px;color:#888;"><span id="s-strlbl">Stgrs:</span> <strong id="s-str" style="color:#222;">3</strong></div>
     <div style="font-size:12px;color:#888;">H: <strong id="s-ht" style="color:#222;">5.0"</strong></div>
     <div style="font-size:12px;color:#888;">Wt: <strong id="s-wt" style="color:#222;">— lbs</strong></div>
-    <div style="font-size:12px;color:#888;">Load: <strong id="s-load" style="color:#2e7d32;">—</strong></div>
+    <div id="s-load-wrap" style="font-size:12px;color:#888;">Load: <strong id="s-load" style="color:#2e7d32;">—</strong></div>
     <div id="s-badges" style="display:flex;gap:4px;"></div>
   </div>
 
@@ -600,7 +604,7 @@
           <span style="font-size:12px;font-weight:600;color:#444;">Cut List</span>
           <span id="sch-cut-qty-label" style="font-size:11px;color:#888;"></span>
         </div>
-        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <table style="width:auto;border-collapse:collapse;font-size:11px;">
           <thead>
             <tr style="background:#f7f7f7;">
               <th style="border:1px solid #eee;padding:5px 9px;text-align:left;font-weight:600;color:#555;">Piece</th>
@@ -681,7 +685,7 @@
           <button onclick="exportCSV(cfg())" style="background:#f0f7f0;border:1px solid #c8e0c8;border-radius:4px;padding:4px 12px;font-size:11px;color:#2e7d32;cursor:pointer;" onmouseover="this.style.background='#e8f5e9'" onmouseout="this.style.background='#f0f7f0'">Export CSV</button>
         </div>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <table style="width:auto;border-collapse:collapse;font-size:12px;">
         <thead>
           <tr style="background:#f7f7f7;">
             <th style="border:1px solid #eee;padding:6px 10px;text-align:left;font-weight:600;color:#555;">Piece</th>
@@ -1632,11 +1636,11 @@ function drawSideView(c) {
   }
   // Stringer body (long bar)
   ctx.fillStyle = '#8a6520';
-  ctx.fillRect(ox, oy+bth*sc, pw, sh*sc);
+  ctx.fillRect(ox, oy+tth*sc, pw, sh*sc);
   // 4-way notch voids at L/4 and 3L/4
   if (c.entry === '4way' && c.nw > 0 && c.nh > 0 && c.nw < L / 2) {
     const nPw = c.nw * sc;
-    const nPy = oy + bth*sc + (sh - c.nh)*sc;
+    const nPy = oy + tth*sc + (sh - c.nh)*sc;
     const nPh = c.nh * sc;
     [L/4, 3*L/4].forEach((pos, idx) => {
       const nPx = ox + (pos - c.nw/2) * sc;
@@ -1706,14 +1710,14 @@ function drawEndView(c) {
   ctx.fillStyle='#ffffff';
   for (let i=0; i<sn-1; i++) {
     const x1 = strX(i), x2 = strX(i+1);
-    ctx.fillRect(ox + (x1+st/2)*sc, oy+bth*sc, (x2-x1-st)*sc, sh*sc);
+    ctx.fillRect(ox + (x1+st/2)*sc, oy+tth*sc, (x2-x1-st)*sc, sh*sc);
   }
 
   // Stringers (cross-section)
   ctx.fillStyle='#7a5c20';
   for (let i=0; i<sn; i++) {
     const x = strX(i);
-    ctx.fillRect(ox + (x-st/2)*sc, oy+bth*sc, st*sc, sh*sc);
+    ctx.fillRect(ox + (x-st/2)*sc, oy+tth*sc, st*sc, sh*sc);
   }
 
   // Top deck (full width with overhang)
